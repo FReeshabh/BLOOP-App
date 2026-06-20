@@ -1,0 +1,489 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0534A2FAC3C554A3D16E420A /* HealthDataPointEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6B8DB1F4476E20E5D3C7CA1 /* HealthDataPointEntity.swift */; };
+		06F989474B55BF2589BAFFCB /* StrainData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12481BB4915EBAF8043BA12E /* StrainData.swift */; };
+		0D74CF8B16550B925D661A7D /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD3399A987DC99958617D73 /* ThemeManager.swift */; };
+		0DD0ED99F99B1F3D135DEAC3 /* RecoveryRingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 479FD8650A62FFFCE2922C0F /* RecoveryRingView.swift */; };
+		11F601C2B697872C27F97E82 /* OverviewDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2E0441DF668497598C7616 /* OverviewDashboardView.swift */; };
+		18CEF27D962C1EBF3D63EA7C /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 2803176CBB7CB85B97214246 /* GoogleSignIn */; };
+		1B297AC48D4CFE789EDC8F63 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7F6827FF56F8839CD5B4F1B /* AuthManager.swift */; };
+		1BF25C4F56C1008B0FAD4A26 /* InsightCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C79C6C8AEE32BC7BA9E6297 /* InsightCardView.swift */; };
+		20DDEA6DFC73EEFEEB8248D5 /* OverviewViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D2DDAB87B2613BD0025F2D /* OverviewViewModel.swift */; };
+		337738637EB68A49BF9A0872 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D712035DFF9C0CD39DB889 /* MainTabView.swift */; };
+		382B67A7A4613DDABEE6126E /* SleepStagesBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70B105609544F21A537A4BA /* SleepStagesBarView.swift */; };
+		49D407EBF573D89C764C029A /* StrainGaugeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B52813015B78D17FCC03D2 /* StrainGaugeView.swift */; };
+		5309CFE6A09BF4B262A4519A /* BLOOPApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02A578C89635F1DA0E655925 /* BLOOPApp.swift */; };
+		59DECE94C0903C6C167783DA /* HealthDataPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDB8314607A93925C2345492 /* HealthDataPoint.swift */; };
+		5E66F551D31D5AFC0F426F84 /* GoogleHealthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 347DD892AE2A01CB7FB66A86 /* GoogleHealthService.swift */; };
+		642B19CEAEB2CA3EC4732700 /* SleepData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 252995CC26343922C573568E /* SleepData.swift */; };
+		66E69104497C37877C0A7447 /* HeartRateZonesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B54E34C71EFFBAFE01339105 /* HeartRateZonesView.swift */; };
+		6D4548E8F77204F57D3B17F8 /* RecoveryContributorsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EAFB894C18AFF9642E1758A /* RecoveryContributorsView.swift */; };
+		730944BE84D7B59FD4F6684A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDC5B4AC1F4BBF475D847A21 /* SettingsView.swift */; };
+		876105455090490B5A1BBBF4 /* RecoveryScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5085DD227AF9598C96CC17 /* RecoveryScore.swift */; };
+		98F9782BED6604DCD9BE3FA2 /* OverviewMetricCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 255241A1D0954DA67310D772 /* OverviewMetricCardView.swift */; };
+		AED922D30438FACC69CE098F /* UserBaselineEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C95A1F06F7ACA516AC96D44C /* UserBaselineEntity.swift */; };
+		BB851CD6406C9D107011DF4E /* LoadDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1DBF6F8EAAC0716FFC2B0D4 /* LoadDetailView.swift */; };
+		BEE597E964B2D40431059D5E /* RecoveryScoreEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2445973C8C31B1B2F8A5586 /* RecoveryScoreEngine.swift */; };
+		BFEB096BB2874604F5F47709 /* ReadinessDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4278E0FEC9678BE0C29659DB /* ReadinessDetailView.swift */; };
+		C1BCFB1AAF2E13F6F3477687 /* HealthDataType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7761B174832F0F4C0E25860E /* HealthDataType.swift */; };
+		C528D0652321CB489D9309C8 /* ScoreRingsRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F546435A219B08732FA7E14 /* ScoreRingsRowView.swift */; };
+		CD110CC85F2F1DC1B00E3F89 /* HealthDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 525D55B7D7950872AB658246 /* HealthDataProvider.swift */; };
+		D3E67CA86E2DE663156CEDC8 /* TrendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B38FFC37A4C054EF7FE3D34 /* TrendsView.swift */; };
+		E5AD6C23006B5A54D17F6B32 /* OptimalLoadBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496197B5FE6FC2BCBCFBA2C3 /* OptimalLoadBarView.swift */; };
+		F04031B14C32F5EAE32C4818 /* MetricCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D110C0447F1823CB820841A7 /* MetricCardView.swift */; };
+		F28942ADFA8E9E76C145F85C /* SleepDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB8A74AEEB4833A9823E341C /* SleepDetailView.swift */; };
+		F828349652BF818F1EC276EA /* RecoveryScoreEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBA8B2712222ABBDC31F0D60 /* RecoveryScoreEntity.swift */; };
+		FA4CD4B5847173284FBAC985 /* TrendsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 785894AE8474B781C2D9184A /* TrendsViewModel.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		02A578C89635F1DA0E655925 /* BLOOPApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLOOPApp.swift; sourceTree = "<group>"; };
+		04D2DDAB87B2613BD0025F2D /* OverviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewViewModel.swift; sourceTree = "<group>"; };
+		0EBF4C5F134CAEBDE43AE4C7 /* BLOOP.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BLOOP.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		12481BB4915EBAF8043BA12E /* StrainData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrainData.swift; sourceTree = "<group>"; };
+		252995CC26343922C573568E /* SleepData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepData.swift; sourceTree = "<group>"; };
+		255241A1D0954DA67310D772 /* OverviewMetricCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewMetricCardView.swift; sourceTree = "<group>"; };
+		347DD892AE2A01CB7FB66A86 /* GoogleHealthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleHealthService.swift; sourceTree = "<group>"; };
+		4278E0FEC9678BE0C29659DB /* ReadinessDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadinessDetailView.swift; sourceTree = "<group>"; };
+		479FD8650A62FFFCE2922C0F /* RecoveryRingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryRingView.swift; sourceTree = "<group>"; };
+		496197B5FE6FC2BCBCFBA2C3 /* OptimalLoadBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptimalLoadBarView.swift; sourceTree = "<group>"; };
+		525D55B7D7950872AB658246 /* HealthDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataProvider.swift; sourceTree = "<group>"; };
+		5C79C6C8AEE32BC7BA9E6297 /* InsightCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightCardView.swift; sourceTree = "<group>"; };
+		6B38FFC37A4C054EF7FE3D34 /* TrendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsView.swift; sourceTree = "<group>"; };
+		72B52813015B78D17FCC03D2 /* StrainGaugeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrainGaugeView.swift; sourceTree = "<group>"; };
+		7761B174832F0F4C0E25860E /* HealthDataType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataType.swift; sourceTree = "<group>"; };
+		785894AE8474B781C2D9184A /* TrendsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsViewModel.swift; sourceTree = "<group>"; };
+		8EAFB894C18AFF9642E1758A /* RecoveryContributorsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryContributorsView.swift; sourceTree = "<group>"; };
+		9F546435A219B08732FA7E14 /* ScoreRingsRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreRingsRowView.swift; sourceTree = "<group>"; };
+		A1D712035DFF9C0CD39DB889 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		A70B105609544F21A537A4BA /* SleepStagesBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepStagesBarView.swift; sourceTree = "<group>"; };
+		AAD3399A987DC99958617D73 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
+		AF5085DD227AF9598C96CC17 /* RecoveryScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryScore.swift; sourceTree = "<group>"; };
+		B54E34C71EFFBAFE01339105 /* HeartRateZonesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateZonesView.swift; sourceTree = "<group>"; };
+		B6B8DB1F4476E20E5D3C7CA1 /* HealthDataPointEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataPointEntity.swift; sourceTree = "<group>"; };
+		BBA8B2712222ABBDC31F0D60 /* RecoveryScoreEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryScoreEntity.swift; sourceTree = "<group>"; };
+		BDC5B4AC1F4BBF475D847A21 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		C7F6827FF56F8839CD5B4F1B /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		C95A1F06F7ACA516AC96D44C /* UserBaselineEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserBaselineEntity.swift; sourceTree = "<group>"; };
+		CB8A74AEEB4833A9823E341C /* SleepDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepDetailView.swift; sourceTree = "<group>"; };
+		D110C0447F1823CB820841A7 /* MetricCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricCardView.swift; sourceTree = "<group>"; };
+		DE2E0441DF668497598C7616 /* OverviewDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewDashboardView.swift; sourceTree = "<group>"; };
+		E2445973C8C31B1B2F8A5586 /* RecoveryScoreEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryScoreEngine.swift; sourceTree = "<group>"; };
+		F1DBF6F8EAAC0716FFC2B0D4 /* LoadDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadDetailView.swift; sourceTree = "<group>"; };
+		FDB8314607A93925C2345492 /* HealthDataPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataPoint.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		DCE416AB3D204696316431B4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				18CEF27D962C1EBF3D63EA7C /* GoogleSignIn in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1A3F1B62D65018C0B6BB8613 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				04D2DDAB87B2613BD0025F2D /* OverviewViewModel.swift */,
+				785894AE8474B781C2D9184A /* TrendsViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		2CB5957009D0FB6AC6E2B22C /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				B6B8DB1F4476E20E5D3C7CA1 /* HealthDataPointEntity.swift */,
+				BBA8B2712222ABBDC31F0D60 /* RecoveryScoreEntity.swift */,
+				C95A1F06F7ACA516AC96D44C /* UserBaselineEntity.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		45AA8C7A7C702B4A4E657F89 = {
+			isa = PBXGroup;
+			children = (
+				DFFA71655F53CE787E2A07AD /* App */,
+				633208F83A2EE7296861E0FC /* Models */,
+				2CB5957009D0FB6AC6E2B22C /* Persistence */,
+				58E66C11F1E4BD57B3F40186 /* Services */,
+				1A3F1B62D65018C0B6BB8613 /* ViewModels */,
+				FBDF3F8501EF2F52F8F9B07F /* Views */,
+				B11E56188DAAD2B9355416F0 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		58E66C11F1E4BD57B3F40186 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				C7F6827FF56F8839CD5B4F1B /* AuthManager.swift */,
+				347DD892AE2A01CB7FB66A86 /* GoogleHealthService.swift */,
+				525D55B7D7950872AB658246 /* HealthDataProvider.swift */,
+				E2445973C8C31B1B2F8A5586 /* RecoveryScoreEngine.swift */,
+				AAD3399A987DC99958617D73 /* ThemeManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		633208F83A2EE7296861E0FC /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				FDB8314607A93925C2345492 /* HealthDataPoint.swift */,
+				7761B174832F0F4C0E25860E /* HealthDataType.swift */,
+				AF5085DD227AF9598C96CC17 /* RecoveryScore.swift */,
+				252995CC26343922C573568E /* SleepData.swift */,
+				12481BB4915EBAF8043BA12E /* StrainData.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		B11E56188DAAD2B9355416F0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0EBF4C5F134CAEBDE43AE4C7 /* BLOOP.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		DFFA71655F53CE787E2A07AD /* App */ = {
+			isa = PBXGroup;
+			children = (
+				02A578C89635F1DA0E655925 /* BLOOPApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		FBDF3F8501EF2F52F8F9B07F /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				B54E34C71EFFBAFE01339105 /* HeartRateZonesView.swift */,
+				5C79C6C8AEE32BC7BA9E6297 /* InsightCardView.swift */,
+				F1DBF6F8EAAC0716FFC2B0D4 /* LoadDetailView.swift */,
+				A1D712035DFF9C0CD39DB889 /* MainTabView.swift */,
+				D110C0447F1823CB820841A7 /* MetricCardView.swift */,
+				496197B5FE6FC2BCBCFBA2C3 /* OptimalLoadBarView.swift */,
+				DE2E0441DF668497598C7616 /* OverviewDashboardView.swift */,
+				255241A1D0954DA67310D772 /* OverviewMetricCardView.swift */,
+				4278E0FEC9678BE0C29659DB /* ReadinessDetailView.swift */,
+				8EAFB894C18AFF9642E1758A /* RecoveryContributorsView.swift */,
+				479FD8650A62FFFCE2922C0F /* RecoveryRingView.swift */,
+				9F546435A219B08732FA7E14 /* ScoreRingsRowView.swift */,
+				BDC5B4AC1F4BBF475D847A21 /* SettingsView.swift */,
+				CB8A74AEEB4833A9823E341C /* SleepDetailView.swift */,
+				A70B105609544F21A537A4BA /* SleepStagesBarView.swift */,
+				72B52813015B78D17FCC03D2 /* StrainGaugeView.swift */,
+				6B38FFC37A4C054EF7FE3D34 /* TrendsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3383AFD96BEBAAF7C4E78D95 /* BLOOP */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6125DAAB0F73E9E6048B9F5A /* Build configuration list for PBXNativeTarget "BLOOP" */;
+			buildPhases = (
+				8C5C7F1F9056AFAA0549364B /* Sources */,
+				DCE416AB3D204696316431B4 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BLOOP;
+			packageProductDependencies = (
+				2803176CBB7CB85B97214246 /* GoogleSignIn */,
+			);
+			productName = BLOOP;
+			productReference = 0EBF4C5F134CAEBDE43AE4C7 /* BLOOP.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		55D3B5DED5D39C07B6759218 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					3383AFD96BEBAAF7C4E78D95 = {
+						DevelopmentTeam = "";
+					};
+				};
+			};
+			buildConfigurationList = C7935B9A1405D94D74B55975 /* Build configuration list for PBXProject "BLOOP" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 45AA8C7A7C702B4A4E657F89;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				5E11C7CB32E1C2205FB24954 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = B11E56188DAAD2B9355416F0 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3383AFD96BEBAAF7C4E78D95 /* BLOOP */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8C5C7F1F9056AFAA0549364B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1B297AC48D4CFE789EDC8F63 /* AuthManager.swift in Sources */,
+				5309CFE6A09BF4B262A4519A /* BLOOPApp.swift in Sources */,
+				5E66F551D31D5AFC0F426F84 /* GoogleHealthService.swift in Sources */,
+				59DECE94C0903C6C167783DA /* HealthDataPoint.swift in Sources */,
+				0534A2FAC3C554A3D16E420A /* HealthDataPointEntity.swift in Sources */,
+				CD110CC85F2F1DC1B00E3F89 /* HealthDataProvider.swift in Sources */,
+				C1BCFB1AAF2E13F6F3477687 /* HealthDataType.swift in Sources */,
+				66E69104497C37877C0A7447 /* HeartRateZonesView.swift in Sources */,
+				1BF25C4F56C1008B0FAD4A26 /* InsightCardView.swift in Sources */,
+				BB851CD6406C9D107011DF4E /* LoadDetailView.swift in Sources */,
+				337738637EB68A49BF9A0872 /* MainTabView.swift in Sources */,
+				F04031B14C32F5EAE32C4818 /* MetricCardView.swift in Sources */,
+				E5AD6C23006B5A54D17F6B32 /* OptimalLoadBarView.swift in Sources */,
+				11F601C2B697872C27F97E82 /* OverviewDashboardView.swift in Sources */,
+				98F9782BED6604DCD9BE3FA2 /* OverviewMetricCardView.swift in Sources */,
+				20DDEA6DFC73EEFEEB8248D5 /* OverviewViewModel.swift in Sources */,
+				BFEB096BB2874604F5F47709 /* ReadinessDetailView.swift in Sources */,
+				6D4548E8F77204F57D3B17F8 /* RecoveryContributorsView.swift in Sources */,
+				0DD0ED99F99B1F3D135DEAC3 /* RecoveryRingView.swift in Sources */,
+				876105455090490B5A1BBBF4 /* RecoveryScore.swift in Sources */,
+				BEE597E964B2D40431059D5E /* RecoveryScoreEngine.swift in Sources */,
+				F828349652BF818F1EC276EA /* RecoveryScoreEntity.swift in Sources */,
+				C528D0652321CB489D9309C8 /* ScoreRingsRowView.swift in Sources */,
+				730944BE84D7B59FD4F6684A /* SettingsView.swift in Sources */,
+				642B19CEAEB2CA3EC4732700 /* SleepData.swift in Sources */,
+				F28942ADFA8E9E76C145F85C /* SleepDetailView.swift in Sources */,
+				382B67A7A4613DDABEE6126E /* SleepStagesBarView.swift in Sources */,
+				06F989474B55BF2589BAFFCB /* StrainData.swift in Sources */,
+				49D407EBF573D89C764C029A /* StrainGaugeView.swift in Sources */,
+				0D74CF8B16550B925D661A7D /* ThemeManager.swift in Sources */,
+				D3E67CA86E2DE663156CEDC8 /* TrendsView.swift in Sources */,
+				FA4CD4B5847173284FBAC985 /* TrendsViewModel.swift in Sources */,
+				AED922D30438FACC69CE098F /* UserBaselineEntity.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		18C52C0EA97E70D3406ACD90 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		217DC0E365053B9C14EDC824 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		30982FA4B4C2926DF712310A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = bloop;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		55C79915A0FFD687EA0D9165 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = bloop;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		6125DAAB0F73E9E6048B9F5A /* Build configuration list for PBXNativeTarget "BLOOP" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				55C79915A0FFD687EA0D9165 /* Debug */,
+				30982FA4B4C2926DF712310A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C7935B9A1405D94D74B55975 /* Build configuration list for PBXProject "BLOOP" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				217DC0E365053B9C14EDC824 /* Debug */,
+				18C52C0EA97E70D3406ACD90 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		5E11C7CB32E1C2205FB24954 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 7.1.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2803176CBB7CB85B97214246 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5E11C7CB32E1C2205FB24954 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 55D3B5DED5D39C07B6759218 /* Project object */;
+}

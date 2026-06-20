@@ -1,0 +1,25 @@
+name: BLOOP
+targets:
+  BLOOP:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - App
+      - Models
+      - Persistence
+      - Services
+      - ViewModels
+      - Views
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: bloop
+        INFOPLIST_FILE: Info.plist
+        DEVELOPMENT_TEAM: ""
+    dependencies:
+      - package: GoogleSignIn
+        product: GoogleSignIn
+packages:
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS.git
+    from: 7.1.0
