@@ -12,6 +12,8 @@ struct ScoreRingsRowView: View {
     var hasReadinessData: Bool = true
     var hasLoadData: Bool = true
 
+    var isReadinessCalculating: Bool = false
+
     var onSleepTap: (() -> Void)?
     var onReadinessTap: (() -> Void)?
     var onLoadTap: (() -> Void)?
@@ -34,7 +36,8 @@ struct ScoreRingsRowView: View {
                 icon: "gauge.with.dots.needle.33percent",
                 ringColor: Color(hex: "00E08F"),
                 showPercent: false,
-                hasData: hasReadinessData
+                hasData: hasReadinessData,
+                isCalculating: isReadinessCalculating
             )
             .onTapGesture { onReadinessTap?() }
 
@@ -44,7 +47,8 @@ struct ScoreRingsRowView: View {
                 icon: "bolt.fill",
                 ringColor: Color(hex: "5B86E5"),
                 showPercent: false,
-                hasData: hasLoadData
+                hasData: hasLoadData,
+                isCalculating: false
             )
             .onTapGesture { onLoadTap?() }
         }
@@ -62,18 +66,24 @@ struct ScoreRingView: View {
     let showPercent: Bool
     /// When false, shows "–" in the centre and keeps the ring empty (progress = 0).
     var hasData: Bool = true
+    /// When true, shows "Calculating..." state.
+    var isCalculating: Bool = false
 
     @State private var animatedProgress: CGFloat = 0
 
     var body: some View {
         VStack(spacing: 8) {
             ZStack {
-                // Background track
+                // Background track always visible
                 Circle()
                     .stroke(Color.gray.opacity(0.15), lineWidth: 10)
 
-                // Animated progress arc — hidden when no data
-                if hasData {
+                if isCalculating {
+                    // Muted gray dashed ring for calculating state
+                    Circle()
+                        .stroke(Color.gray.opacity(0.4), style: StrokeStyle(lineWidth: 10, dash: [8, 8]))
+                } else if hasData {
+                    // Animated progress arc
                     Circle()
                         .trim(from: 0, to: animatedProgress)
                         .stroke(
@@ -90,18 +100,15 @@ struct ScoreRingView: View {
                             style: StrokeStyle(lineWidth: 10, lineCap: .round)
                         )
                         .rotationEffect(.degrees(-90))
-
-                    // Glow effect
-                    Circle()
-                        .trim(from: 0, to: animatedProgress)
-                        .stroke(ringColor.opacity(0.25), lineWidth: 18)
-                        .blur(radius: 8)
-                        .rotationEffect(.degrees(-90))
                 }
 
                 // Center text
                 VStack(spacing: 0) {
-                    if hasData {
+                    if isCalculating {
+                        Text("...")
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundColor(.gray.opacity(0.4))
+                    } else if hasData {
                         HStack(alignment: .firstTextBaseline, spacing: 1) {
                             Text("\(score)")
                                 .font(.system(size: 28, weight: .bold, design: .rounded))
@@ -128,7 +135,7 @@ struct ScoreRingView: View {
                 Image(systemName: icon)
                     .font(.system(size: 10))
                     .foregroundColor(.gray)
-                Text(label)
+                Text(isCalculating ? "Calculating" : label)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.gray)
             }

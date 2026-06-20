@@ -124,6 +124,17 @@ struct StressGaugeCardView: View {
                         .foregroundColor(.white.opacity(0.8))
                 }
                 Spacer()
+            }
+
+            Spacer()
+
+            // Number & Badge
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(String(format: "%.0f", stressLevel))
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
 
                 Text(stressLabel)
                     .font(.system(size: 10, weight: .bold))
@@ -132,19 +143,14 @@ struct StressGaugeCardView: View {
                     .padding(.vertical, 2)
                     .background(stressColor.opacity(0.15))
                     .clipShape(Capsule())
+                    .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 6 }
             }
 
-            Spacer()
-
-            // Mini gauge
-            HStack {
-                Spacer()
-                miniGauge
-                    .frame(width: 100, height: 55)
-                Spacer()
-            }
-
-            Spacer()
+            // Subtitle
+            Text(stressLevel > 60 ? "Elevated today" : "Within normal range")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.gray.opacity(0.6))
+                .lineLimit(1)
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -158,39 +164,8 @@ struct StressGaugeCardView: View {
                 )
         )
     }
-
-    private var miniGauge: some View {
-        ZStack {
-            // Background arc
-            ArcShape(startAngle: -180, endAngle: 0)
-                .stroke(Color.gray.opacity(0.12), style: StrokeStyle(lineWidth: 8, lineCap: .round))
-
-            // Gradient colored arc
-            ArcShape(startAngle: -180, endAngle: -180 + (180 * stressLevel / 100.0))
-                .stroke(
-                    LinearGradient(
-                        colors: [Color(hex: "00E08F"), Color(hex: "FFC700"), Color(hex: "FF334B")],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ),
-                    style: StrokeStyle(lineWidth: 8, lineCap: .round)
-                )
-
-            // Needle dot
-            let needleAngle = -180.0 + (180.0 * stressLevel / 100.0)
-            let radians = needleAngle * .pi / 180.0
-            let radius: CGFloat = 35
-            let dotX = cos(radians) * radius
-            let dotY = sin(radians) * radius
-
-            Circle()
-                .fill(Color.white)
-                .frame(width: 6, height: 6)
-                .shadow(color: .white.opacity(0.6), radius: 4)
-                .offset(x: dotX, y: dotY + 10)
-        }
-    }
 }
+
 
 struct PulsingDotView: View {
     @State private var animate = false

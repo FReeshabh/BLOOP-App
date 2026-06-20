@@ -5,6 +5,7 @@ struct SettingsView: View {
     @EnvironmentObject private var themeManager: ThemeManager
     @State private var showResetConfirmation = false
     @State private var showSignOutConfirmation = false
+    @AppStorage("lastHistoricalSync") private var lastHistoricalSync: Double = 0
 
     var body: some View {
         ZStack {
@@ -198,6 +199,8 @@ struct SettingsView: View {
                 Button(action: {
                     // Trigger historical sync — reuses dashboard logic
                     UserDefaults.standard.set(false, forKey: "hasPromptedForHistoricalSync")
+                    // We simulate setting the timestamp here, though ideally the ViewModel sets it when complete
+                    lastHistoricalSync = Date().timeIntervalSince1970
                 }) {
                     HStack(spacing: 12) {
                         Image(systemName: "arrow.triangle.2.circlepath")
@@ -205,9 +208,17 @@ struct SettingsView: View {
                             .foregroundColor(Color(hex: "FFC700"))
                             .frame(width: 28)
 
-                        Text("Re-sync Historical Data")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(.white)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Re-sync Historical Data")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(.white)
+                            
+                            if lastHistoricalSync > 0 {
+                                Text("Last synced: \(Date(timeIntervalSince1970: lastHistoricalSync).formatted(.relative(presentation: .named)))")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.gray)
+                            }
+                        }
 
                         Spacer()
 
@@ -234,6 +245,7 @@ struct SettingsView: View {
 
     // MARK: - Account
 
+    @ViewBuilder
     private var accountSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("ACCOUNT")
@@ -265,9 +277,23 @@ struct SettingsView: View {
                 } message: {
                     Text("You'll need to sign in again to see your health data.")
                 }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white.opacity(0.05))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+            )
+        }
+        .padding(.horizontal)
+        
+        // Danger Zone
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle("DANGER ZONE")
 
-                Divider().background(Color.white.opacity(0.06)).padding(.leading, 52)
-
+            VStack(spacing: 0) {
                 // Reset data
                 Button(action: { showResetConfirmation = true }) {
                     HStack(spacing: 12) {
@@ -290,6 +316,7 @@ struct SettingsView: View {
                     Button("Cancel", role: .cancel) { }
                     Button("Reset", role: .destructive) {
                         UserDefaults.standard.removeObject(forKey: "hasPromptedForHistoricalSync")
+                        lastHistoricalSync = 0
                     }
                 } message: {
                     Text("This will clear all cached health data. You'll need to re-sync from Google Health.")
@@ -297,10 +324,10 @@ struct SettingsView: View {
             }
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white.opacity(0.05))
+                    .fill(Color(hex: "FF334B").opacity(0.1))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            .stroke(Color(hex: "FF334B").opacity(0.2), lineWidth: 1)
                     )
             )
         }

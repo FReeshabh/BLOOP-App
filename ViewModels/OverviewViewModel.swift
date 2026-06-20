@@ -20,6 +20,10 @@ final class OverviewViewModel: ObservableObject {
     @Published var activeZoneMinutes: Double = 0
     @Published var stressLevel: Double = 0  // 0–100 estimated from strain
 
+    // Insights
+    @Published var insightHeadline: String = "Analyzing your data"
+    @Published var insightExplanation: String = "Connect your account or wear your device to get daily insights."
+
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
@@ -79,6 +83,36 @@ final class OverviewViewModel: ObservableObject {
         let recoveryFactor = 100.0 - Double(readinessScore)
         let strainFactor = strainData.map { $0.dayStrain / 21.0 * 100.0 } ?? 0
         return min(100, (recoveryFactor * 0.6 + strainFactor * 0.4))
+    }
+
+    /// Indicate if Readiness is calculating (we have some data but the algorithm doesn't have a score yet).
+    /// Since we use an algorithm in `RecoveryScoreEngine`, we'll treat `recoveryScore == nil` when we have data as calculating.
+    var isReadinessCalculating: Bool {
+        return recoveryScore == nil && (currentHeartRate != nil || sleepData != nil)
+    }
+
+    private func updateInsights() {
+        if recoveryScore == nil {
+            insightHeadline = "Collecting Baseline"
+            insightExplanation = "We're gathering more data to build your accurate recovery profile."
+            return
+        }
+        
+        let score = readinessScore
+        if score >= 66 {
+            insightHeadline = "Recovery is solid today."
+            if estimatedStress > 50 {
+                insightExplanation = "You're well-recovered, but watch your stress levels as the day goes on."
+            } else {
+                insightExplanation = "Your body is primed to take on more strain. Consider pushing harder."
+            }
+        } else if score >= 33 {
+            insightHeadline = "Recovery is adequate."
+            insightExplanation = "You're in a good spot, but don't overexert yourself. Keep things balanced."
+        } else {
+            insightHeadline = "Your body needs rest."
+            insightExplanation = "Prioritize light movement and sleep tonight to bounce back."
+        }
     }
 
     // MARK: - Data Loading
@@ -204,6 +238,8 @@ final class OverviewViewModel: ObservableObject {
             self.todaySteps       = Int(todayStepsVal)
             self.activeZoneMinutes = todayAZM
             self.stressLevel      = estimatedStress
+
+            self.updateInsights()
 
         } catch let GoogleHealthError.apiError(message) where message.contains("403") || message.contains("401") {
             authManager.signOut()

@@ -108,6 +108,13 @@ struct OverviewDashboardView: View {
         .padding(.horizontal)
         .padding(.top, 12)
 
+        // Daily Insight Card
+        InsightCardView(
+            headline: viewModel.insightHeadline,
+            explanation: viewModel.insightExplanation
+        )
+        .padding(.horizontal)
+
         // Three Score Rings — show "–" when data hasn't arrived yet
         ScoreRingsRowView(
             sleepScore: viewModel.sleepScore,
@@ -116,17 +123,12 @@ struct OverviewDashboardView: View {
             hasSleepData: viewModel.sleepData != nil,
             hasReadinessData: viewModel.recoveryScore != nil,
             hasLoadData: viewModel.strainData != nil,
+            isReadinessCalculating: viewModel.isReadinessCalculating,
             onSleepTap: { if viewModel.sleepData != nil { showSleepDetail = true } },
             onReadinessTap: { if viewModel.recoveryScore != nil { showReadinessDetail = true } },
             onLoadTap: { if viewModel.strainData != nil { showLoadDetail = true } }
         )
         .padding(.top, 4)
-
-        // Optimal Load Bar
-        OptimalLoadBarView(
-            currentLoad: viewModel.currentLoadPosition,
-            optimalRange: viewModel.optimalLoadRange
-        )
 
         // Metric Cards Grid
         metricCardsGrid
@@ -152,7 +154,7 @@ struct OverviewDashboardView: View {
             GridItem(.flexible(), spacing: 10),
             GridItem(.flexible(), spacing: 10)
         ], spacing: 10) {
-            // Heart Rate
+            // Heart Rate - primary is resting, secondary is current
             Button(action: {
                 if !viewModel.todayHeartRateData.isEmpty {
                     showHeartRateDetail = true
@@ -162,11 +164,9 @@ struct OverviewDashboardView: View {
                     icon: "heart.fill",
                     iconColor: Color(hex: "FF6B6B"),
                     title: "Heart rate",
-                    value: viewModel.currentHeartRate.map { String(format: "%.0f", $0) } ?? "--",
-                    unit: viewModel.currentHeartRate != nil ? "bpm" : "",
-                    subtitle: viewModel.currentHeartRate != nil
-                        ? viewModel.restingHeartRate.map { "resting \(Int($0)) bpm" }
-                        : "No data today",
+                    value: viewModel.restingHeartRate.map { String(format: "%.0f", $0) } ?? "--",
+                    unit: viewModel.restingHeartRate != nil ? "bpm" : "",
+                    subtitle: viewModel.currentHeartRate.map { "Current \($0) bpm" } ?? "No data today",
                     isLive: true
                 )
             }
@@ -188,6 +188,18 @@ struct OverviewDashboardView: View {
                 title: "Zone minutes",
                 value: String(format: "%.0f", viewModel.activeZoneMinutes),
                 unit: "min",
+                subtitle: viewModel.activeZoneMinutes > 0 ? "Above average" : "Goal 30",
+                showChevron: false
+            )
+
+            // Optimal Load
+            OverviewMetricCardView(
+                icon: "bolt.horizontal.fill",
+                iconColor: Color(hex: "5B86E5"),
+                title: "Optimal load",
+                value: String(format: "%.0f", viewModel.currentLoadPosition),
+                unit: "",
+                subtitle: "Range \(Int(viewModel.optimalLoadRange.lowerBound))-\(Int(viewModel.optimalLoadRange.upperBound))",
                 showChevron: false
             )
 
@@ -196,12 +208,12 @@ struct OverviewDashboardView: View {
         }
     }
 
-    private var stepsSubtitle: String? {
+    private var stepsSubtitle: String {
         let steps = viewModel.todaySteps
         if steps > 0 {
             return "\(formatSteps(steps)) today"
         }
-        return nil
+        return "Goal 10,000"
     }
 
     private func formatSteps(_ steps: Int) -> String {

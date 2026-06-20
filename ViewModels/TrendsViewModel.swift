@@ -63,6 +63,13 @@ final class TrendsViewModel: ObservableObject {
             case .weight:          return .weight
             }
         }
+        
+        var isLowerBetter: Bool {
+            switch self {
+            case .restingHeartRate, .weight, .respiratoryRate: return true
+            case .hrv, .sleepDuration, .steps: return false
+            }
+        }
     }
 
     enum TimePeriod: String, CaseIterable, Identifiable {
@@ -84,9 +91,12 @@ final class TrendsViewModel: ObservableObject {
     // MARK: - Published State
 
     @Published var selectedMetric: TrendMetric = .restingHeartRate
+    @Published var selectedSecondaryMetric: TrendMetric? = nil
     @Published var selectedPeriod: TimePeriod = .sixMonth
     @Published var dataPoints: [TrendDataPoint] = []
+    @Published var secondaryDataPoints: [TrendDataPoint] = []
     @Published var periodAverages: [PeriodAverage] = []
+    @Published var secondaryPeriodAverages: [PeriodAverage] = []
     @Published var overallAverage: Double = 0
     @Published var totalDays: Int = 0
     @Published var isLoading: Bool = false
@@ -170,13 +180,36 @@ final class TrendsViewModel: ObservableObject {
             }
 
             // Group into period averages
-            self.periodAverages = computePeriodAverages(from: filtered, period: selectedPeriod)
+            self.periodAverages = computePeriodAverages(from: filtered, period: selectedPeriod, startDate: startDate)
+
+            // Fetch Secondary Metric if selected
+            if let secondary = selectedSecondaryMetric {
+                let secFetched: [HealthDataPoint]
+                if secondary == .sleepDuration {
+                    secFetched = try await healthService.fetchSleepDataPoints(from: startDate, to: now)
+                } else {
+                    secFetched = try await healthService.fetchDataPoints(
+                        for: secondary.healthDataType,
+                        from: startDate,
+                        to: now
+                    )
+                }
+                let secFiltered = secFetched.filter { $0.startTime >= startDate }
+                self.secondaryDataPoints = secFiltered.map { TrendDataPoint(date: $0.startTime, value: $0.value) }
+                    .sorted { $0.date < $1.date }
+                self.secondaryPeriodAverages = computePeriodAverages(from: secFiltered, period: selectedPeriod, startDate: startDate)
+            } else {
+                self.secondaryDataPoints = []
+                self.secondaryPeriodAverages = []
+            }
 
         } catch {
             print("Trends fetch error: \(error)")
             self.dataPoints = []
+            self.secondaryDataPoints = []
             self.overallAverage = 0
             self.periodAverages = []
+            self.secondaryPeriodAverages = []
         }
 
         isLoading = false
@@ -192,7 +225,7 @@ final class TrendsViewModel: ObservableObject {
 
     // MARK: - Helpers
 
-    private func computePeriodAverages(from points: [HealthDataPoint], period: TimePeriod) -> [PeriodAverage] {
+    private func computePeriodAverages(from points: [HealthDataPoint], period: TimePeriod, startDate: Date) -> [PeriodAverage] {
         let calendar = Calendar.current
         let formatter = DateFormatter()
 
@@ -200,17 +233,24 @@ final class TrendsViewModel: ObservableObject {
         switch period {
         case .week:
             formatter.dateFormat = "EEE"
-            let grouped = Dictionary(grouping: points) { calendar.component(.day, from: $0.startTime) }
-            return grouped.sorted { $0.key < $1.key }.enumerated().map { index, pair in
-                let avg = pair.value.map(\.value).reduce(0, +) / Double(pair.value.count)
-                let prevAvg: Double? = index > 0 ? {
-                    let prevPair = grouped.sorted { $0.key < $1.key }[index - 1]
-                    return prevPair.value.map(\.value).reduce(0, +) / Double(prevPair.value.count)
-                }() : nil
-                let change = prevAvg.map { prev in prev > 0 ? ((avg - prev) / prev * 100) : 0 }
-                let label = pair.value.first.map { formatter.string(from: $0.startTime) } ?? "\(pair.key)"
-                return PeriodAverage(label: label, average: avg, percentChange: change)
+            var averages: [PeriodAverage] = []
+            for i in 0..<7 {
+                let dayStart = calendar.date(byAdding: .day, value: i, to: calendar.startOfDay(for: startDate))!
+                let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart)!
+                let bucketPoints = points.filter { $0.startTime >= dayStart && $0.startTime < dayEnd }
+                let avg = bucketPoints.isEmpty ? 0 : bucketPoints.map(\.value).reduce(0, +) / Double(bucketPoints.count)
+                
+                let change: Double? = {
+                    guard i > 0 else { return nil }
+                    let prevDayStart = calendar.date(byAdding: .day, value: i - 1, to: calendar.startOfDay(for: startDate))!
+                    let prevPoints = points.filter { $0.startTime >= prevDayStart && $0.startTime < dayStart }
+                    let prevAvg = prevPoints.isEmpty ? 0 : prevPoints.map(\.value).reduce(0, +) / Double(prevPoints.count)
+                    return prevAvg > 0 ? ((avg - prevAvg) / prevAvg * 100) : 0
+                }()
+                let label = formatter.string(from: dayStart)
+                averages.append(PeriodAverage(label: label, average: avg, percentChange: change))
             }
+            return averages
 
         case .month:
             formatter.dateFormat = "MMM d"
