@@ -9,6 +9,7 @@ struct OverviewDashboardView: View {
     @State private var showReadinessDetail = false
     @State private var showSleepDetail = false
     @State private var showLoadDetail = false
+    @State private var showHeartRateDetail = false
 
     var body: some View {
         ZStack {
@@ -53,6 +54,12 @@ struct OverviewDashboardView: View {
             if let strain = viewModel.strainData {
                 LoadDetailView(strain: strain)
             }
+        }
+        .sheet(isPresented: $showHeartRateDetail) {
+            HeartRateDetailView(
+                heartRateData: viewModel.todayHeartRateData,
+                restingHeartRate: viewModel.restingHeartRate
+            )
         }
         .sheet(isPresented: $viewModel.showHistoricalSyncPrompt) {
             historicalSyncPrompt
@@ -146,17 +153,24 @@ struct OverviewDashboardView: View {
             GridItem(.flexible(), spacing: 10)
         ], spacing: 10) {
             // Heart Rate
-            OverviewMetricCardView(
-                icon: "heart.fill",
-                iconColor: Color(hex: "FF6B6B"),
-                title: "Heart rate",
-                value: viewModel.currentHeartRate.map { String(format: "%.0f", $0) } ?? "--",
-                unit: viewModel.currentHeartRate != nil ? "bpm" : "",
-                subtitle: viewModel.currentHeartRate != nil
-                    ? viewModel.restingHeartRate.map { "resting \(Int($0)) bpm" }
-                    : "No data today",
-                isLive: true
-            )
+            Button(action: {
+                if !viewModel.todayHeartRateData.isEmpty {
+                    showHeartRateDetail = true
+                }
+            }) {
+                OverviewMetricCardView(
+                    icon: "heart.fill",
+                    iconColor: Color(hex: "FF6B6B"),
+                    title: "Heart rate",
+                    value: viewModel.currentHeartRate.map { String(format: "%.0f", $0) } ?? "--",
+                    unit: viewModel.currentHeartRate != nil ? "bpm" : "",
+                    subtitle: viewModel.currentHeartRate != nil
+                        ? viewModel.restingHeartRate.map { "resting \(Int($0)) bpm" }
+                        : "No data today",
+                    isLive: true
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
 
             // Steps
             OverviewMetricCardView(

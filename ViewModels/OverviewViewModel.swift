@@ -14,6 +14,7 @@ final class OverviewViewModel: ObservableObject {
 
     // Overview metric cards
     @Published var currentHeartRate: Double?
+    @Published var todayHeartRateData: [HealthDataPoint] = []
     @Published var restingHeartRate: Double?
     @Published var todaySteps: Int = 0
     @Published var activeZoneMinutes: Double = 0
@@ -196,7 +197,9 @@ final class OverviewViewModel: ObservableObject {
             )
 
             // --- Overview cards ---
-            self.currentHeartRate = hrData.filter { calendar.isDateInToday($0.startTime) }.first?.value
+            let todayHR = hrData.filter { calendar.isDateInToday($0.startTime) }
+            self.todayHeartRateData = todayHR
+            self.currentHeartRate = todayHR.first?.value
             self.restingHeartRate = currentRHR
             self.todaySteps       = Int(todayStepsVal)
             self.activeZoneMinutes = todayAZM

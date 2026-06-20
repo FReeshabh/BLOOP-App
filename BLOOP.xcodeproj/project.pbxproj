@@ -36,6 +36,7 @@
 		C528D0652321CB489D9309C8 /* ScoreRingsRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F546435A219B08732FA7E14 /* ScoreRingsRowView.swift */; };
 		CD110CC85F2F1DC1B00E3F89 /* HealthDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 525D55B7D7950872AB658246 /* HealthDataProvider.swift */; };
 		D3E67CA86E2DE663156CEDC8 /* TrendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B38FFC37A4C054EF7FE3D34 /* TrendsView.swift */; };
+		D46F66BBA838FB41C50F90D1 /* HeartRateDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A9F7D4A352D7765561C6D93 /* HeartRateDetailView.swift */; };
 		E5AD6C23006B5A54D17F6B32 /* OptimalLoadBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496197B5FE6FC2BCBCFBA2C3 /* OptimalLoadBarView.swift */; };
 		F04031B14C32F5EAE32C4818 /* MetricCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D110C0447F1823CB820841A7 /* MetricCardView.swift */; };
 		F28942ADFA8E9E76C145F85C /* SleepDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB8A74AEEB4833A9823E341C /* SleepDetailView.swift */; };
@@ -46,7 +47,7 @@
 /* Begin PBXFileReference section */
 		02A578C89635F1DA0E655925 /* BLOOPApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLOOPApp.swift; sourceTree = "<group>"; };
 		04D2DDAB87B2613BD0025F2D /* OverviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewViewModel.swift; sourceTree = "<group>"; };
-		0EBF4C5F134CAEBDE43AE4C7 /* BLOOP.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BLOOP.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0EBF4C5F134CAEBDE43AE4C7 /* BLOOP.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BLOOP.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		12481BB4915EBAF8043BA12E /* StrainData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrainData.swift; sourceTree = "<group>"; };
 		252995CC26343922C573568E /* SleepData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepData.swift; sourceTree = "<group>"; };
 		255241A1D0954DA67310D772 /* OverviewMetricCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewMetricCardView.swift; sourceTree = "<group>"; };
@@ -61,6 +62,7 @@
 		7761B174832F0F4C0E25860E /* HealthDataType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataType.swift; sourceTree = "<group>"; };
 		785894AE8474B781C2D9184A /* TrendsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsViewModel.swift; sourceTree = "<group>"; };
 		8EAFB894C18AFF9642E1758A /* RecoveryContributorsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryContributorsView.swift; sourceTree = "<group>"; };
+		9A9F7D4A352D7765561C6D93 /* HeartRateDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateDetailView.swift; sourceTree = "<group>"; };
 		9F546435A219B08732FA7E14 /* ScoreRingsRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreRingsRowView.swift; sourceTree = "<group>"; };
 		A1D712035DFF9C0CD39DB889 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		A70B105609544F21A537A4BA /* SleepStagesBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepStagesBarView.swift; sourceTree = "<group>"; };
@@ -167,6 +169,7 @@
 		FBDF3F8501EF2F52F8F9B07F /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				9A9F7D4A352D7765561C6D93 /* HeartRateDetailView.swift */,
 				B54E34C71EFFBAFE01339105 /* HeartRateZonesView.swift */,
 				5C79C6C8AEE32BC7BA9E6297 /* InsightCardView.swift */,
 				F1DBF6F8EAAC0716FFC2B0D4 /* LoadDetailView.swift */,
@@ -218,6 +221,11 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					3383AFD96BEBAAF7C4E78D95 = {
+						DevelopmentTeam = PXP453J347;
+					};
+				};
 			};
 			buildConfigurationList = C7935B9A1405D94D74B55975 /* Build configuration list for PBXProject "BLOOP" */;
 			developmentRegion = en;
@@ -253,6 +261,7 @@
 				0534A2FAC3C554A3D16E420A /* HealthDataPointEntity.swift in Sources */,
 				CD110CC85F2F1DC1B00E3F89 /* HealthDataProvider.swift in Sources */,
 				C1BCFB1AAF2E13F6F3477687 /* HealthDataType.swift in Sources */,
+				D46F66BBA838FB41C50F90D1 /* HeartRateDetailView.swift in Sources */,
 				66E69104497C37877C0A7447 /* HeartRateZonesView.swift in Sources */,
 				1BF25C4F56C1008B0FAD4A26 /* InsightCardView.swift in Sources */,
 				BB851CD6406C9D107011DF4E /* LoadDetailView.swift in Sources */,
@@ -408,8 +417,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = PXP453J347;
+				ENABLE_DEBUG_DYLIB = NO;
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -429,7 +438,6 @@
 				DEVELOPMENT_TEAM = PXP453J347;
 				ENABLE_DEBUG_DYLIB = NO;
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

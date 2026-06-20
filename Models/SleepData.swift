@@ -19,9 +19,13 @@ struct SleepData: Identifiable, Codable {
     
     // Targets & scoring
     let sleepNeed: TimeInterval        // personalized target in seconds (default 8h)
+    var apiScore: Int?                 // Provided by API
     
     /// Sleep performance as a percentage of sleep need achieved.
     var sleepPerformance: Int {
+        if let apiScore = apiScore, apiScore > 0 {
+            return apiScore
+        }
         guard sleepNeed > 0 else { return 0 }
         return min(100, Int(round((totalTimeAsleep / sleepNeed) * 100)))
     }

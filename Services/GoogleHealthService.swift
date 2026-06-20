@@ -53,15 +53,14 @@ class GoogleHealthService: HealthDataProvider {
                     guard let (value, date) = extractValue(from: raw, for: dataType) else { continue }
                     let src = raw["dataSource"] as? [String: Any]
                     let isFitbit = (src?["platform"] as? String) == "FITBIT"
-                        && (src?["recordingMethod"] as? String) == "DERIVED"
-                    let sourceLabel = isFitbit ? "Fitbit" : "HealthKit"
+                    guard isFitbit else { continue }
                     
                     hrPoints.append(HealthDataPoint(
                         type: dataType,
                         value: value,
                         startTime: date,
                         endTime: date,
-                        source: sourceLabel
+                        source: "Fitbit"
                     ))
                 }
                 // Sort newest first (descending)
@@ -91,8 +90,9 @@ class GoogleHealthService: HealthDataProvider {
 
                 let src = raw["dataSource"] as? [String: Any]
                 let isFitbit = (src?["platform"] as? String) == "FITBIT"
-                    && (src?["recordingMethod"] as? String) == "DERIVED"
-                let sourceLabel = isFitbit ? "Fitbit" : "HealthKit"
+                guard isFitbit else { continue }
+                
+                let sourceLabel = "Fitbit"
                 let key = Self.calendarKey(for: date)
 
                 if isCumulative || isAveraged {
@@ -163,6 +163,7 @@ class GoogleHealthService: HealthDataProvider {
 
         // Filter sleep points to only those that represent a nocturnal/main sleep (duration >= 3 hours).
         let sleepSessions = rawPoints
+            .filter { isFitbitDerived($0) }
             .compactMap { parseSleepData(from: $0) }
             .filter { Self.sleepSession($0, overlapsStart: startDate, end: endDate) }
         let validSessions = sleepSessions.filter { $0.totalTimeAsleep >= 10800 } // 3 hours
@@ -175,6 +176,7 @@ class GoogleHealthService: HealthDataProvider {
         print("📡 Fetching all sleep sessions...")
         let rawPoints = try await fetchRawSleepPoints(from: startDate, to: endDate)
         return rawPoints
+            .filter { isFitbitDerived($0) }
             .compactMap { parseSleepData(from: $0) }
             .filter { Self.sleepSession($0, overlapsStart: startDate, end: endDate) }
     }
@@ -186,6 +188,7 @@ class GoogleHealthService: HealthDataProvider {
         // Group by wake-day key
         var bestByDay: [String: (sleep: SleepData, source: String)] = [:]
         for raw in rawPoints {
+            guard isFitbitDerived(raw) else { continue }
             guard let parsed = parseSleepDataAndSource(from: raw) else { continue }
             guard Self.sleepSession(parsed.sleep, overlapsStart: startDate, end: endDate) else { continue }
             // Filter out naps (less than 3 hours)
@@ -359,6 +362,11 @@ class GoogleHealthService: HealthDataProvider {
                 }
             }
         }
+        
+        var apiScore: Int? = nil
+        if let score = doubleFromStringOrNumber(sleepNode["sleepScore"]) ?? doubleFromStringOrNumber(summary["sleepScore"]) ?? doubleFromStringOrNumber(summary["score"]) {
+            apiScore = Int(score)
+        }
 
         return SleepData(
             date: sessionDate,
@@ -370,7 +378,8 @@ class GoogleHealthService: HealthDataProvider {
             lightSleepTime: lightMin * 60,
             remSleepTime: remMin * 60,
             deepSleepTime: deepMin * 60,
-            sleepNeed: 8 * 3600
+            sleepNeed: 8 * 3600,
+            apiScore: apiScore
         )
     }
 
