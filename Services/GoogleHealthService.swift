@@ -31,48 +31,53 @@ class GoogleHealthService: HealthDataProvider {
             throw GoogleHealthError.authenticationRequired
         }
 
-        let urlComponents = URLComponents(string: "\(baseURL)/\(dataType.rawValue)/dataPoints")!
-        guard let url = urlComponents.url else { throw GoogleHealthError.invalidURL }
-
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw GoogleHealthError.apiError("Invalid response")
-        }
-        guard (200...299).contains(httpResponse.statusCode) else {
-            let body = String(data: data, encoding: .utf8) ?? "No body"
-            throw GoogleHealthError.apiError("HTTP \(httpResponse.statusCode): \(body)")
-        }
+        let url = URL(string: "\(baseURL)/\(dataType.rawValue)/dataPoints")!
+        let filter = filterString(for: dataType, from: startDate)
+        
+        let rawPoints = try await fetchAllPages(for: url, token: token, filter: filter)
 
         // --- VERBOSE LOGGING ---
         let ignoreList: [HealthDataType] = [.dailyRestingHeartRate, .respiratoryRate, .dailyHeartRateVariability]
         if !ignoreList.contains(dataType) {
-            let rawResponseString = String(data: data, encoding: .utf8) ?? "<unreadable>"
             print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             print("📡 [GoogleHealthService] \(dataType.rawValue)")
-            print("📦 Raw Response:")
-            print(rawResponseString)
+            print("📦 Raw Response: Received \(rawPoints.count) raw data points")
             print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         }
         // --- END VERBOSE LOGGING ---
 
         do {
-            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let rawPoints = json["dataPoints"] as? [[String: Any]] else {
-                print("⚠️ [\(dataType.rawValue)] No dataPoints array in response")
-                return []
+            // Special handling for intraday heartRate: no daily averaging or grouping
+            if dataType == .heartRate {
+                var hrPoints: [HealthDataPoint] = []
+                for raw in rawPoints {
+                    guard let (value, date) = extractValue(from: raw, for: dataType) else { continue }
+                    let src = raw["dataSource"] as? [String: Any]
+                    let isFitbit = (src?["platform"] as? String) == "FITBIT"
+                        && (src?["recordingMethod"] as? String) == "DERIVED"
+                    let sourceLabel = isFitbit ? "Fitbit" : "HealthKit"
+                    
+                    hrPoints.append(HealthDataPoint(
+                        type: dataType,
+                        value: value,
+                        startTime: date,
+                        endTime: date,
+                        source: sourceLabel
+                    ))
+                }
+                // Sort newest first (descending)
+                let sortedPoints = hrPoints.sorted { $0.startTime > $1.startTime }
+                print("✅ [\(dataType.rawValue)] \(sortedPoints.count) raw point(s)")
+                return sortedPoints
             }
 
             // Cumulative types: the API sends per-minute granular rows that must be summed by day.
-            // Averaged types: per-minute readings that should be averaged (e.g., heart rate bpm).
+            // Averaged types: per-minute readings that should be averaged (e.g., resting heart rate / other aggregates if any).
             // Scalar types: each data point is already a daily aggregate; keep the best (Fitbit preferred).
             let cumulativeTypes: Set<HealthDataType> = [
                 .activeEnergyBurned, .steps, .distance, .activeZoneMinutes
             ]
-            let averagedTypes: Set<HealthDataType> = [.heartRate]
+            let averagedTypes: Set<HealthDataType> = [] // heartRate removed to support raw intraday values
             let isCumulative = cumulativeTypes.contains(dataType)
             let isAveraged = averagedTypes.contains(dataType)
 
@@ -128,7 +133,7 @@ class GoogleHealthService: HealthDataProvider {
                     guard let meta = bestByDate[key] else { return nil }
                     let finalValue: Double
                     if isAveraged, let count = countByDate[key], count > 0 {
-                        finalValue = total / Double(count)  // average for HR
+                        finalValue = total / Double(count)
                     } else {
                         finalValue = total  // sum for calories/steps/distance/AZM
                     }
@@ -160,72 +165,143 @@ class GoogleHealthService: HealthDataProvider {
 
     func fetchSleepData(from startDate: Date, to endDate: Date) async throws -> SleepData? {
         print("📡 Fetching sleep data...")
-        let rawPoints = try await fetchRawSleepPoints()
+        let rawPoints = try await fetchRawSleepPoints(from: startDate)
 
-        // Sort newest first and pick the best Fitbit-derived record, falling back to any record.
-        let sorted = rawPoints.sorted { dict1, dict2 in
-            let d1 = (dict1["sleep"] as? [String: Any])?["createTime"] as? String ?? ""
-            let d2 = (dict2["sleep"] as? [String: Any])?["createTime"] as? String ?? ""
-            return d1 > d2
-        }
-        guard let best = sorted.first(where: isFitbitDerived) ?? sorted.first else { return nil }
-        return parseSleepData(from: best)
+        // Filter sleep points to only those that represent a nocturnal/main sleep (duration >= 3 hours).
+        let sleepSessions = rawPoints.compactMap { parseSleepData(from: $0) }
+        let validSessions = sleepSessions.filter { $0.totalTimeAsleep >= 10800 } // 3 hours
+        
+        // Pick the one with the maximum duration (longest sleep)
+        return validSessions.max(by: { $0.totalTimeAsleep < $1.totalTimeAsleep })
     }
 
     func fetchSleepDataPoints(from startDate: Date, to endDate: Date) async throws -> [HealthDataPoint] {
         print("📡 Fetching sleep data points for trends...")
-        let rawPoints = try await fetchRawSleepPoints()
+        let rawPoints = try await fetchRawSleepPoints(from: startDate)
 
-        // One SleepData per calendar day (wake-day), preferring Fitbit-derived records.
-        var bestByDay: [String: [String: Any]] = [:]
+        // Group by wake-day key
+        var bestByDay: [String: (sleep: SleepData, source: String)] = [:]
         for raw in rawPoints {
-            guard let sleepNode = raw["sleep"] as? [String: Any],
-                  let interval = sleepNode["interval"] as? [String: Any],
-                  let endTimeStr = interval["endTime"] as? String,
-                  let wakeDate = parseISO8601(endTimeStr) else { continue }
-
-            let dayKey = Self.calendarKey(for: wakeDate)
+            guard let parsed = parseSleepDataAndSource(from: raw) else { continue }
+            // Filter out naps (less than 3 hours)
+            guard parsed.sleep.totalTimeAsleep >= 10800 else { continue }
+            
+            let dayKey = Self.calendarKey(for: parsed.sleep.date)
             if let existing = bestByDay[dayKey] {
-                // Prefer Fitbit-derived over HealthKit
-                if !isFitbitDerived(existing) && isFitbitDerived(raw) {
-                    bestByDay[dayKey] = raw
+                // Pick the longer sleep session
+                if parsed.sleep.totalTimeAsleep > existing.sleep.totalTimeAsleep {
+                    bestByDay[dayKey] = parsed
                 }
             } else {
-                bestByDay[dayKey] = raw
+                bestByDay[dayKey] = parsed
             }
         }
 
-        return bestByDay.values.compactMap { raw -> HealthDataPoint? in
-            guard let sleep = parseSleepData(from: raw) else { return nil }
-            return HealthDataPoint(
+        return bestByDay.values.map { item in
+            HealthDataPoint(
                 type: .sleep,
-                value: sleep.totalTimeAsleep,   // seconds; Trends formats as "Xh Ym"
-                startTime: sleep.date,
-                endTime: sleep.wakeTime,
-                source: isFitbitDerived(raw) ? "Fitbit" : "HealthKit"
+                value: item.sleep.totalTimeAsleep,
+                startTime: item.sleep.date,
+                endTime: item.sleep.wakeTime,
+                source: item.source
             )
         }.sorted { $0.startTime < $1.startTime }
     }
 
     // MARK: - Sleep Shared Helpers
 
-    /// Fetches all raw sleep dataPoints from the Google Health API.
-    private func fetchRawSleepPoints() async throws -> [[String: Any]] {
+    /// Fetches raw sleep dataPoints starting from startDate from the Google Health API.
+    private func fetchRawSleepPoints(from startDate: Date) async throws -> [[String: Any]] {
         guard let token = try await authManager.getAccessToken() else {
             throw GoogleHealthError.authenticationRequired
         }
-        let urlComponents = URLComponents(string: "\(baseURL)/sleep/dataPoints")!
-        guard let url = urlComponents.url else { throw GoogleHealthError.invalidURL }
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let url = URL(string: "\(baseURL)/sleep/dataPoints")!
+        
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime]
+        let dateStr = isoFormatter.string(from: startDate)
+        let filter = "sleep.interval.start_time >= \"\(dateStr)\""
+        
+        return try await fetchAllPages(for: url, token: token, filter: filter)
+    }
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else { return [] }
+    /// Fetches all pages recursively for a Google Health API endpoint.
+    private func fetchAllPages(for url: URL, token: String, filter: String) async throws -> [[String: Any]] {
+        var allPoints: [[String: Any]] = []
+        var nextPageToken: String? = nil
+        
+        repeat {
+            var urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: true)!
+            var queryItems = [
+                URLQueryItem(name: "filter", value: filter),
+                URLQueryItem(name: "pageSize", value: "1000")
+            ]
+            if let pageToken = nextPageToken {
+                queryItems.append(URLQueryItem(name: "pageToken", value: pageToken))
+            }
+            urlComponents.queryItems = queryItems
+            
+            guard let requestURL = urlComponents.url else { throw GoogleHealthError.invalidURL }
+            var request = URLRequest(url: requestURL)
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw GoogleHealthError.apiError("Invalid response")
+            }
+            guard (200...299).contains(httpResponse.statusCode) else {
+                let body = String(data: data, encoding: .utf8) ?? "No body"
+                throw GoogleHealthError.apiError("HTTP \(httpResponse.statusCode): \(body)")
+            }
+            
+            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                throw GoogleHealthError.decodingFailed
+            }
+            
+            if let points = json["dataPoints"] as? [[String: Any]] {
+                allPoints.append(contentsOf: points)
+            }
+            
+            nextPageToken = json["nextPageToken"] as? String
+        } while nextPageToken != nil
+        
+        return allPoints
+    }
 
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let rawPoints = json["dataPoints"] as? [[String: Any]] else { return [] }
-        return rawPoints
+    /// Helper to format the AIP-160 filter parameter string for a specific data type and start date.
+    private func filterString(for dataType: HealthDataType, from startDate: Date) -> String {
+        let snakeCaseName = dataType.rawValue.replacingOccurrences(of: "-", with: "_")
+        
+        if dataType.rawValue.hasPrefix("daily-") {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            let dateStr = dateFormatter.string(from: startDate)
+            return "\(snakeCaseName).date >= \"\(dateStr)\""
+        } else if dataType == .dailyHeartRateVariability ||
+                    dataType == .weight ||
+                    dataType == .bodyFat ||
+                    dataType == .vo2Max ||
+                    dataType == .coreBodyTemperature ||
+                    dataType == .skinTemperature ||
+                    dataType == .bloodPressure {
+            let isoFormatter = ISO8601DateFormatter()
+            isoFormatter.formatOptions = [.withInternetDateTime]
+            let dateStr = isoFormatter.string(from: startDate)
+            return "\(snakeCaseName).sample_time.physical_time >= \"\(dateStr)\""
+        } else {
+            let isoFormatter = ISO8601DateFormatter()
+            isoFormatter.formatOptions = [.withInternetDateTime]
+            let dateStr = isoFormatter.string(from: startDate)
+            return "\(snakeCaseName).interval.start_time >= \"\(dateStr)\""
+        }
+    }
+
+    /// Parses both SleepData and its source label.
+    private func parseSleepDataAndSource(from raw: [String: Any]) -> (sleep: SleepData, source: String)? {
+        guard let sleep = parseSleepData(from: raw) else { return nil }
+        let source = isFitbitDerived(raw) ? "Fitbit" : "HealthKit"
+        return (sleep, source)
     }
 
     /// Returns true if this raw data-point dict is from a Fitbit DERIVED source.
@@ -313,7 +389,7 @@ class GoogleHealthService: HealthDataProvider {
             let rmssd = hrv["rootMeanSquareOfSuccessiveDifferencesMilliseconds"] as? Double
             let sdnn  = hrv["standardDeviationMilliseconds"] as? Double
             guard let v = (rmssd.flatMap { $0 > 0 ? $0 : nil }) ?? sdnn, v > 0 else { return nil }
-            let date = parseSampleTimeDate(hrv["sampleTime"] as? [String: Any]) ?? Date()
+            guard let date = parseSampleTimeDate(hrv["sampleTime"] as? [String: Any]) else { return nil }
             return (v, date)
 
         case .respiratoryRate:
@@ -346,10 +422,12 @@ class GoogleHealthService: HealthDataProvider {
             return (meters, date)
 
         case .heartRate:
-            // Structure: { "heartRate": { "interval": { "civilStartTime": { "date": {...} } }, "bpm": 72 } }
+            // Structure: { "heartRate": { "interval": { "startTime": "...", "civilStartTime": { "date": {...} } }, "bpm": 72 } }
             guard let node = point["heartRate"] as? [String: Any],
                   let bpm = doubleFromStringOrNumber(node["bpm"]),
-                  let date = parseCivilDate(from: node["interval"] as? [String: Any]) else { return nil }
+                  let interval = node["interval"] as? [String: Any],
+                  let startTimeStr = interval["startTime"] as? String,
+                  let date = parseISO8601(startTimeStr) else { return nil }
             return (bpm, date)
 
         case .activeZoneMinutes:
@@ -424,9 +502,15 @@ class GoogleHealthService: HealthDataProvider {
     }
 
     private func parseSampleTimeDate(_ sampleTime: [String: Any]?) -> Date? {
-        guard let civilTime = sampleTime?["civilTime"] as? [String: Any],
-              let dateDict  = civilTime["date"] as? [String: Any] else { return nil }
-        return parseSimpleDate(dateDict)
+        if let civilTime = sampleTime?["civilTime"] as? [String: Any],
+           let dateDict  = civilTime["date"] as? [String: Any],
+           let date = parseSimpleDate(dateDict) {
+            return date
+        }
+        if let physicalTimeStr = sampleTime?["physicalTime"] as? String {
+            return parseISO8601(physicalTimeStr)
+        }
+        return nil
     }
 
     /// Safely converts a value that may be a String, Int, or Double to Double.

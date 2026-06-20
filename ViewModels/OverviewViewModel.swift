@@ -98,11 +98,12 @@ final class OverviewViewModel: ObservableObject {
             let startOfDay = calendar.startOfDay(for: now)
             let yesterday = calendar.date(byAdding: .day, value: -1, to: now)!
             let startOfYesterday = calendar.startOfDay(for: yesterday)
+            let thirtyDaysAgo = calendar.date(byAdding: .day, value: -30, to: now)!
 
-            // Fetch everything concurrently
-            async let fetchHRV   = healthService.fetchDataPoints(for: .dailyHeartRateVariability, from: startOfYesterday, to: now)
-            async let fetchRHR   = healthService.fetchDataPoints(for: .dailyRestingHeartRate, from: startOfYesterday, to: now)
-            async let fetchResp  = healthService.fetchDataPoints(for: .respiratoryRate, from: startOfYesterday, to: now)
+            // Fetch everything concurrently - biometric baselines require 30 days of data
+            async let fetchHRV   = healthService.fetchDataPoints(for: .dailyHeartRateVariability, from: thirtyDaysAgo, to: now)
+            async let fetchRHR   = healthService.fetchDataPoints(for: .dailyRestingHeartRate, from: thirtyDaysAgo, to: now)
+            async let fetchResp  = healthService.fetchDataPoints(for: .respiratoryRate, from: thirtyDaysAgo, to: now)
             async let fetchHR    = healthService.fetchDataPoints(for: .heartRate, from: startOfDay, to: now)
             async let fetchSteps = healthService.fetchDataPoints(for: .steps, from: startOfDay, to: now)
             async let fetchDist  = healthService.fetchDataPoints(for: .distance, from: startOfDay, to: now)
@@ -120,7 +121,6 @@ final class OverviewViewModel: ObservableObject {
             let currentResp = respData.first?.value
 
             if let hrv = currentHRV, let rhr = currentRHR, let resp = currentResp {
-                let thirtyDaysAgo = calendar.date(byAdding: .day, value: -30, to: now)!
                 let hrvHistory  = hrvData.filter  { $0.startTime >= thirtyDaysAgo && !calendar.isDateInToday($0.startTime) }
                 let rhrHistory  = rhrData.filter  { $0.startTime >= thirtyDaysAgo && !calendar.isDateInToday($0.startTime) }
                 let respHistory = respData.filter { $0.startTime >= thirtyDaysAgo && !calendar.isDateInToday($0.startTime) }
@@ -193,7 +193,7 @@ final class OverviewViewModel: ObservableObject {
             )
 
             // --- Overview cards ---
-            self.currentHeartRate = hrData.filter { calendar.isDateInToday($0.startTime) }.last?.value
+            self.currentHeartRate = hrData.filter { calendar.isDateInToday($0.startTime) }.first?.value
             self.restingHeartRate = currentRHR
             self.todaySteps       = Int(todayStepsVal)
             self.activeZoneMinutes = todayAZM
