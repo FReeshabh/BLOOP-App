@@ -96,7 +96,8 @@ struct ReadinessDetailView: View {
                 value: String(format: "%.0f", score.currentHRV),
                 unit: "ms",
                 average: String(format: "avg %.0f ms", score.baselineHRV),
-                delta: score.hrvDelta
+                delta: score.hrvDelta,
+                position: 50.0 + score.hrvZScore * 16.6
             )
 
             Divider().background(Color.white.opacity(0.08))
@@ -107,7 +108,8 @@ struct ReadinessDetailView: View {
                 value: String(format: "%.0f", score.currentRHR),
                 unit: "bpm",
                 average: String(format: "avg %.0f bpm", score.baselineRHR),
-                delta: score.rhrDelta
+                delta: score.rhrDelta,
+                position: 50.0 + score.rhrZScore * 16.6
             )
 
             Divider().background(Color.white.opacity(0.08))
@@ -118,7 +120,8 @@ struct ReadinessDetailView: View {
                 value: String(format: "%.1f", score.currentRespRate),
                 unit: "br/min",
                 average: String(format: "avg %.1f br/min", score.baselineRespRate),
-                delta: score.respRateDelta
+                delta: score.respRateDelta,
+                position: 50.0 + score.respiratoryRateZScore * 16.6
             )
 
             if let duration = sleepDuration {
@@ -129,6 +132,7 @@ struct ReadinessDetailView: View {
                 // sleepNeed is 8 h — show as the target, not a historical average.
                 let needHours = 8
                 let needMins  = 0
+                let performance = min(100.0, max(0.0, (duration / (8.0 * 3600.0)) * 100.0))
 
                 vitalRow(
                     icon: "moon.fill",
@@ -136,7 +140,11 @@ struct ReadinessDetailView: View {
                     value: "\(hours)h \(mins)m",
                     unit: "",
                     average: "need \(needHours)h \(needMins)m",
-                    delta: (duration / 3600.0) - 8.0
+                    delta: (duration / 3600.0) - 8.0,
+                    position: performance,
+                    normalMin: 85.0,
+                    normalMax: 100.0,
+                    centerMarker: 85.0
                 )
             }
         }
@@ -153,7 +161,9 @@ struct ReadinessDetailView: View {
 
     @ViewBuilder
     private func vitalRow(icon: String, title: String, value: String, unit: String,
-                          average: String, delta: Double) -> some View {
+                          average: String, delta: Double, position: Double? = nil,
+                          normalMin: Double = 33.4, normalMax: Double = 66.6,
+                          centerMarker: Double = 50.0) -> some View {
         // delta is already directionally normalised at source:
         // HRV: higher is better, delta = current - baseline (positive = good)
         // RHR/Resp: already inverted, delta = baseline - current (positive = good)
@@ -163,41 +173,98 @@ struct ReadinessDetailView: View {
         let trendColor: Color = isPositive ? Color(hex: "00E08F") : (isNegative ? Color(hex: "FF334B") : .gray)
         let trendIcon = isPositive ? "arrowtriangle.up.fill" : (isNegative ? "arrowtriangle.down.fill" : "minus")
 
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundColor(.gray)
-                .frame(width: 24)
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(.gray)
+                    .frame(width: 24)
 
-            Text(title)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.white.opacity(0.8))
+                Text(title)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white.opacity(0.8))
 
-            Spacer()
+                Spacer()
 
-            VStack(alignment: .trailing, spacing: 2) {
-                HStack(spacing: 4) {
-                    Text(value)
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+                VStack(alignment: .trailing, spacing: 2) {
+                    HStack(spacing: 4) {
+                        Text(value)
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
 
-                    if !unit.isEmpty {
-                        Text(unit)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.gray)
+                        if !unit.isEmpty {
+                            Text(unit)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.gray)
+                        }
+
+                        Image(systemName: trendIcon)
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(trendColor)
                     }
 
-                    Image(systemName: trendIcon)
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(trendColor)
+                    Text(average)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.gray.opacity(0.6))
                 }
-
-                Text(average)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.gray.opacity(0.6))
+            }
+            
+            if let pos = position {
+                BaselineRangeBar(
+                    position: pos,
+                    normalRangeMin: normalMin,
+                    normalRangeMax: normalMax,
+                    centerMarker: centerMarker
+                )
+                .padding(.top, 4)
+                .padding(.bottom, 6)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
+    }
+}
+
+struct BaselineRangeBar: View {
+    let position: Double // 0 to 100
+    let normalRangeMin: Double
+    let normalRangeMax: Double
+    let centerMarker: Double
+    
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                // Background track
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Color.white.opacity(0.1))
+                    .frame(height: 6)
+                
+                // Shaded normal baseline range
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Color.white.opacity(0.2))
+                    .frame(width: geo.size.width * CGFloat((normalRangeMax - normalRangeMin) / 100.0), height: 6)
+                    .offset(x: geo.size.width * CGFloat(normalRangeMin / 100.0))
+                
+                // Center baseline marker (average)
+                Rectangle()
+                    .fill(Color.gray.opacity(0.5))
+                    .frame(width: 2, height: 10)
+                    .offset(x: geo.size.width * CGFloat(centerMarker / 100.0) - 1)
+                
+                // Current position marker (colored based on performance)
+                let markerColor: Color = {
+                    if position >= normalRangeMax { return Color(hex: "00E08F") } // Optimal/Green
+                    else if position >= normalRangeMin { return Color(hex: "FFC700") } // Normal/Yellow
+                    else { return Color(hex: "FF334B") } // Alert/Red
+                }()
+                
+                Circle()
+                    .fill(markerColor)
+                    .frame(width: 12, height: 12)
+                    .shadow(color: markerColor.opacity(0.5), radius: 4)
+                    .offset(x: geo.size.width * CGFloat(position / 100.0) - 6, y: -3)
+            }
+        }
+        .frame(height: 12)
     }
 }

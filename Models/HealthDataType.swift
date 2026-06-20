@@ -3,7 +3,7 @@ import Foundation
 enum HealthDataType: String, Codable, CaseIterable {
     case heartRate = "heart-rate"
     case dailyRestingHeartRate = "daily-resting-heart-rate"
-    case dailyHeartRateVariability = "heart-rate-variability"
+    case dailyHeartRateVariability = "daily-heart-rate-variability"
     case dailyHeartRateZones = "daily-heart-rate-zones"
     case sleep = "sleep"
     case steps = "steps"

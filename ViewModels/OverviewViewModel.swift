@@ -9,6 +9,7 @@ final class OverviewViewModel: ObservableObject {
 
     @Published var recoveryScore: RecoveryScore?
     @Published var sleepData: SleepData?
+    @Published var todayNaps: [SleepData] = []
     @Published var strainData: StrainData?
 
     // Overview metric cards
@@ -101,17 +102,17 @@ final class OverviewViewModel: ObservableObject {
             let thirtyDaysAgo = calendar.date(byAdding: .day, value: -30, to: now)!
 
             // Fetch everything concurrently - biometric baselines require 30 days of data
-            async let fetchHRV   = healthService.fetchDataPoints(for: .dailyHeartRateVariability, from: thirtyDaysAgo, to: now)
-            async let fetchRHR   = healthService.fetchDataPoints(for: .dailyRestingHeartRate, from: thirtyDaysAgo, to: now)
-            async let fetchResp  = healthService.fetchDataPoints(for: .respiratoryRate, from: thirtyDaysAgo, to: now)
-            async let fetchHR    = healthService.fetchDataPoints(for: .heartRate, from: startOfDay, to: now)
-            async let fetchSteps = healthService.fetchDataPoints(for: .steps, from: startOfDay, to: now)
-            async let fetchDist  = healthService.fetchDataPoints(for: .distance, from: startOfDay, to: now)
-            async let fetchAZM   = healthService.fetchDataPoints(for: .activeZoneMinutes, from: startOfDay, to: now)
-            async let fetchCal   = healthService.fetchDataPoints(for: .activeEnergyBurned, from: startOfDay, to: now)
-            async let fetchSleep = healthService.fetchSleepData(from: startOfYesterday, to: now)
+            async let fetchHRV   = fetchOptionalPoints(for: .dailyHeartRateVariability, from: thirtyDaysAgo, to: now)
+            async let fetchRHR   = fetchOptionalPoints(for: .dailyRestingHeartRate, from: thirtyDaysAgo, to: now)
+            async let fetchResp  = fetchOptionalPoints(for: .respiratoryRate, from: thirtyDaysAgo, to: now)
+            async let fetchHR    = fetchOptionalPoints(for: .heartRate, from: startOfDay, to: now)
+            async let fetchSteps = fetchOptionalPoints(for: .steps, from: startOfDay, to: now)
+            async let fetchDist  = fetchOptionalPoints(for: .distance, from: startOfDay, to: now)
+            async let fetchAZM   = fetchOptionalPoints(for: .activeZoneMinutes, from: startOfDay, to: now)
+            async let fetchCal   = fetchOptionalPoints(for: .activeEnergyBurned, from: startOfDay, to: now)
+            async let fetchSleep = fetchOptionalSleepSessions(from: startOfYesterday, to: now)
 
-            let (hrvData, rhrData, respData, hrData, stepsData, distData, azmData, calData, sleepResult) =
+            let (hrvData, rhrData, respData, hrData, stepsData, distData, azmData, calData, allSleeps) =
                 try await (fetchHRV, fetchRHR, fetchResp, fetchHR, fetchSteps, fetchDist, fetchAZM, fetchCal, fetchSleep)
 
             // Scalar overnight metrics: take the most recent value (already sorted newest-first).
@@ -159,7 +160,9 @@ final class OverviewViewModel: ObservableObject {
             }
 
             // --- Sleep ---
+            let sleepResult = allSleeps.filter { $0.totalTimeAsleep >= 10800 }.max(by: { $0.totalTimeAsleep < $1.totalTimeAsleep })
             self.sleepData = sleepResult
+            self.todayNaps = allSleeps.filter { $0.totalTimeAsleep < 10800 }
 
             // --- Strain ---
             // Each aggregated HealthDataPoint for cumulative types already holds the daily sum
@@ -203,7 +206,7 @@ final class OverviewViewModel: ObservableObject {
             authManager.signOut()
             self.errorMessage = "Session expired. Please sign in again."
         } catch let GoogleHealthError.apiError(message) {
-            self.errorMessage = "API Error: \(message)"
+            self.errorMessage = Self.userFacingAPIError(from: message)
         } catch {
             let nsError = error as NSError
             if nsError.code == -5 || nsError.localizedDescription.lowercased().contains("cancel") {
@@ -230,10 +233,39 @@ final class OverviewViewModel: ObservableObject {
         UserDefaults.standard.set(true, forKey: "hasPromptedForHistoricalSync")
 
         do {
-            for i in 1...5 {
-                try await Task.sleep(nanoseconds: 1_000_000_000)
-                historicalSyncProgress = Double(i) / 5.0
-            }
+            let calendar = Calendar.current
+            let now = Date()
+            let sixtyDaysAgo = calendar.date(byAdding: .day, value: -60, to: now)!
+            
+            // Sync step 1: HRV baseline
+            historicalSyncProgress = 0.05
+            _ = try await healthService.fetchDataPoints(for: .dailyHeartRateVariability, from: sixtyDaysAgo, to: now)
+            
+            // Sync step 2: RHR baseline
+            historicalSyncProgress = 0.20
+            _ = try await healthService.fetchDataPoints(for: .dailyRestingHeartRate, from: sixtyDaysAgo, to: now)
+            
+            // Sync step 3: Respiratory Rate baseline
+            historicalSyncProgress = 0.35
+            _ = try await healthService.fetchDataPoints(for: .respiratoryRate, from: sixtyDaysAgo, to: now)
+            
+            // Sync step 4: Steps history
+            historicalSyncProgress = 0.50
+            _ = try await healthService.fetchDataPoints(for: .steps, from: sixtyDaysAgo, to: now)
+            
+            // Sync step 5: Distance history
+            historicalSyncProgress = 0.65
+            _ = try await healthService.fetchDataPoints(for: .distance, from: sixtyDaysAgo, to: now)
+            
+            // Sync step 6: Sleep history
+            historicalSyncProgress = 0.80
+            _ = try await healthService.fetchSleepDataPoints(from: sixtyDaysAgo, to: now)
+            
+            // Sync step 7: Complete
+            historicalSyncProgress = 0.95
+            try await Task.sleep(nanoseconds: 500_000_000)
+            historicalSyncProgress = 1.0
+            
         } catch {
             print("Error syncing historical data: \(error)")
         }
@@ -242,6 +274,42 @@ final class OverviewViewModel: ObservableObject {
     }
 
     // MARK: - Helpers
+
+    private func fetchOptionalPoints(for dataType: HealthDataType, from startDate: Date, to endDate: Date) async throws -> [HealthDataPoint] {
+        do {
+            return try await healthService.fetchDataPoints(for: dataType, from: startDate, to: endDate)
+        } catch GoogleHealthError.authenticationRequired {
+            throw GoogleHealthError.authenticationRequired
+        } catch let GoogleHealthError.apiError(message) where message.contains("401") || message.contains("403") {
+            throw GoogleHealthError.apiError(message)
+        } catch {
+            print("⚠️ Skipping \(dataType.rawValue): \(error.localizedDescription)")
+            return []
+        }
+    }
+
+    private func fetchOptionalSleepSessions(from startDate: Date, to endDate: Date) async throws -> [SleepData] {
+        do {
+            return try await healthService.fetchAllSleepSessions(from: startDate, to: endDate)
+        } catch GoogleHealthError.authenticationRequired {
+            throw GoogleHealthError.authenticationRequired
+        } catch let GoogleHealthError.apiError(message) where message.contains("401") || message.contains("403") {
+            throw GoogleHealthError.apiError(message)
+        } catch {
+            print("⚠️ Skipping sleep: \(error.localizedDescription)")
+            return []
+        }
+    }
+
+    private static func userFacingAPIError(from message: String) -> String {
+        if message.contains("INVALID_DATA_POINT_FILTER") {
+            return "Google Health rejected one of the data filters. Try again after the app refreshes its health query settings."
+        }
+        if message.contains("PERMISSION_DENIED") || message.contains("insufficient") {
+            return "Google Health permissions are incomplete. Please reconnect and approve all requested health permissions."
+        }
+        return "Google Health could not be reached. Please try again."
+    }
 
     private func computeBaseline(_ points: [HealthDataPoint], fallbackMean: Double, fallbackSD: Double) -> (mean: Double, sd: Double) {
         guard points.count >= 3 else { return (mean: fallbackMean, sd: fallbackSD) }

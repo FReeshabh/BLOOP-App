@@ -46,7 +46,7 @@ struct OverviewDashboardView: View {
         }
         .sheet(isPresented: $showSleepDetail) {
             if let sleep = viewModel.sleepData {
-                SleepDetailView(sleep: sleep)
+                SleepDetailView(sleep: sleep, naps: viewModel.todayNaps)
             }
         }
         .sheet(isPresented: $showLoadDetail) {
@@ -154,7 +154,8 @@ struct OverviewDashboardView: View {
                 unit: viewModel.currentHeartRate != nil ? "bpm" : "",
                 subtitle: viewModel.currentHeartRate != nil
                     ? viewModel.restingHeartRate.map { "resting \(Int($0)) bpm" }
-                    : "No data today"
+                    : "No data today",
+                isLive: true
             )
 
             // Steps

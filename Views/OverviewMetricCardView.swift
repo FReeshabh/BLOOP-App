@@ -10,9 +10,10 @@ struct OverviewMetricCardView: View {
     let unit: String
     let subtitle: String?
     let showChevron: Bool
+    let isLive: Bool
 
     init(icon: String, iconColor: Color, title: String, value: String, unit: String = "",
-         subtitle: String? = nil, showChevron: Bool = true) {
+         subtitle: String? = nil, showChevron: Bool = true, isLive: Bool = false) {
         self.icon = icon
         self.iconColor = iconColor
         self.title = title
@@ -20,6 +21,7 @@ struct OverviewMetricCardView: View {
         self.unit = unit
         self.subtitle = subtitle
         self.showChevron = showChevron
+        self.isLive = isLive
     }
 
     var body: some View {
@@ -34,6 +36,10 @@ struct OverviewMetricCardView: View {
                     Text(title)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.white.opacity(0.8))
+                    
+                    if isLive {
+                        PulsingDotView(color: Color(hex: "00E08F"))
+                    }
                 }
 
                 Spacer()
@@ -183,5 +189,23 @@ struct StressGaugeCardView: View {
                 .shadow(color: .white.opacity(0.6), radius: 4)
                 .offset(x: dotX, y: dotY + 10)
         }
+    }
+}
+
+struct PulsingDotView: View {
+    @State private var animate = false
+    let color: Color
+    
+    var body: some View {
+        Circle()
+            .fill(color)
+            .frame(width: 7, height: 7)
+            .scaleEffect(animate ? 1.4 : 0.8)
+            .opacity(animate ? 0.4 : 1.0)
+            .onAppear {
+                withAnimation(Animation.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                    animate = true
+                }
+            }
     }
 }

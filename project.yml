@@ -13,9 +13,10 @@ targets:
       - Views
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: bloop
+        PRODUCT_BUNDLE_IDENTIFIER: bloop.hearth
         INFOPLIST_FILE: Info.plist
-        DEVELOPMENT_TEAM: ""
+        DEVELOPMENT_TEAM: PXP453J347
+        ENABLE_DEBUG_DYLIB: NO
     dependencies:
       - package: GoogleSignIn
         product: GoogleSignIn

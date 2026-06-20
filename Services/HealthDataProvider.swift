@@ -12,6 +12,9 @@ protocol HealthDataProvider {
     /// Returns the most recent sleep session (used for the Overview/Sleep detail view).
     func fetchSleepData(from startDate: Date, to endDate: Date) async throws -> SleepData?
 
+    /// Returns all sleep sessions for the given date range.
+    func fetchAllSleepSessions(from startDate: Date, to endDate: Date) async throws -> [SleepData]
+
     /// Returns one HealthDataPoint per day whose `value` is `totalTimeAsleep` in seconds.
     /// This is used by the Trends chart so sleep duration is treated like any other metric.
     func fetchSleepDataPoints(from startDate: Date, to endDate: Date) async throws -> [HealthDataPoint]

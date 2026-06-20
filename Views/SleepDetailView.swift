@@ -4,6 +4,21 @@ import SwiftUI
 struct SleepDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let sleep: SleepData
+    let naps: [SleepData]
+
+    init(sleep: SleepData, naps: [SleepData] = []) {
+        self.sleep = sleep
+        self.naps = naps
+    }
+
+    private var totalAsleepWithNaps: TimeInterval {
+        sleep.totalTimeAsleep + naps.map(\.totalTimeAsleep).reduce(0, +)
+    }
+    
+    private var overallPerformance: Int {
+        guard sleep.sleepNeed > 0 else { return 0 }
+        return min(100, Int(round((totalAsleepWithNaps / sleep.sleepNeed) * 100)))
+    }
 
     var body: some View {
         NavigationView {
@@ -26,6 +41,9 @@ struct SleepDetailView: View {
                         // Last Night's Sleep section
                         lastNightSection
                             .padding(.horizontal)
+                        
+                        // Naps section
+                        napsSection
 
                         // Sleep stages
                         sleepStagesSection
@@ -85,7 +103,13 @@ struct SleepDetailView: View {
     // MARK: - Sleep Quality Ring
 
     private var sleepQualityRing: some View {
-        let bandColor = Color(hex: sleep.performanceBand.colorHex)
+        let performance = overallPerformance
+        let performanceBand: SleepPerformanceBand = {
+            if performance >= 85 { return .optimal }
+            else if performance >= 70 { return .adequate }
+            else { return .poor }
+        }()
+        let bandColor = Color(hex: performanceBand.colorHex)
 
         return VStack(spacing: 12) {
             ZStack {
@@ -93,7 +117,7 @@ struct SleepDetailView: View {
                     .stroke(Color.gray.opacity(0.15), lineWidth: 16)
 
                 Circle()
-                    .trim(from: 0, to: CGFloat(sleep.sleepPerformance) / 100.0)
+                    .trim(from: 0, to: CGFloat(performance) / 100.0)
                     .stroke(
                         AngularGradient(
                             gradient: Gradient(colors: [bandColor.opacity(0.5), bandColor]),
@@ -104,17 +128,17 @@ struct SleepDetailView: View {
                         style: StrokeStyle(lineWidth: 16, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
-                    .animation(.easeInOut(duration: 1.0), value: sleep.sleepPerformance)
+                    .animation(.easeInOut(duration: 1.0), value: performance)
 
                 Circle()
-                    .trim(from: 0, to: CGFloat(sleep.sleepPerformance) / 100.0)
+                    .trim(from: 0, to: CGFloat(performance) / 100.0)
                     .stroke(bandColor.opacity(0.25), lineWidth: 28)
                     .blur(radius: 10)
                     .rotationEffect(.degrees(-90))
 
                 VStack(spacing: 4) {
                     HStack(alignment: .firstTextBaseline, spacing: 2) {
-                        Text("\(sleep.sleepPerformance)")
+                        Text("\(performance)")
                             .font(.system(size: 56, weight: .bold, design: .rounded))
                             .foregroundColor(.white)
                         Text("%")
@@ -130,7 +154,9 @@ struct SleepDetailView: View {
                 .foregroundColor(.gray)
                 .tracking(2)
 
-            Text("An ensemble of the four below, weighted toward Hours vs Need. Estimated from Fitbit sleep data.")
+            Text(naps.isEmpty
+                 ? "An ensemble of the four below, weighted toward Hours vs Need. Estimated from Fitbit sleep data."
+                 : "Overall sleep score including nocturnal sleep and \(naps.count) recovery nap(s).")
                 .font(.system(size: 12, weight: .regular))
                 .foregroundColor(.gray.opacity(0.6))
                 .multilineTextAlignment(.center)
@@ -401,5 +427,65 @@ struct SleepDetailView: View {
                         .stroke(Color.white.opacity(0.08), lineWidth: 1)
                 )
         )
+    }
+
+    private var napsSection: some View {
+        Group {
+            if !naps.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("RECOVERY NAPS TODAY")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.gray)
+                        .tracking(1.5)
+                        .padding(.horizontal)
+                    
+                    VStack(spacing: 0) {
+                        ForEach(Array(naps.enumerated()), id: \.element.id) { index, nap in
+                            HStack {
+                                Image(systemName: "sun.max.fill")
+                                    .foregroundColor(Color(hex: "FFC700"))
+                                    .font(.system(size: 14))
+                                    .frame(width: 20)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Nap \(index + 1)")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.white)
+                                    Text("\(nap.bedTime.formatted(.dateTime.hour().minute())) – \(nap.wakeTime.formatted(.dateTime.hour().minute()))")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(.gray)
+                                }
+                                
+                                Spacer()
+                                
+                                VStack(alignment: .trailing, spacing: 2) {
+                                    Text(SleepData.formatDuration(nap.totalTimeAsleep))
+                                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                                        .foregroundColor(.white)
+                                    Text("reduces sleep debt")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(Color(hex: "00E08F"))
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            
+                            if index < naps.count - 1 {
+                                Divider().background(Color.white.opacity(0.08))
+                            }
+                        }
+                    }
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.white.opacity(0.05))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            )
+                    )
+                    .padding(.horizontal)
+                }
+            }
+        }
     }
 }

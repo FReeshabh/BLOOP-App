@@ -46,7 +46,7 @@
 /* Begin PBXFileReference section */
 		02A578C89635F1DA0E655925 /* BLOOPApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLOOPApp.swift; sourceTree = "<group>"; };
 		04D2DDAB87B2613BD0025F2D /* OverviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewViewModel.swift; sourceTree = "<group>"; };
-		0EBF4C5F134CAEBDE43AE4C7 /* BLOOP.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BLOOP.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0EBF4C5F134CAEBDE43AE4C7 /* BLOOP.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BLOOP.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		12481BB4915EBAF8043BA12E /* StrainData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrainData.swift; sourceTree = "<group>"; };
 		252995CC26343922C573568E /* SleepData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepData.swift; sourceTree = "<group>"; };
 		255241A1D0954DA67310D772 /* OverviewMetricCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewMetricCardView.swift; sourceTree = "<group>"; };
@@ -218,11 +218,6 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
-				TargetAttributes = {
-					3383AFD96BEBAAF7C4E78D95 = {
-						DevelopmentTeam = "";
-					};
-				};
 			};
 			buildConfigurationList = C7935B9A1405D94D74B55975 /* Build configuration list for PBXProject "BLOOP" */;
 			developmentRegion = en;
@@ -412,14 +407,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = PXP453J347;
 				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = bloop;
+				PRODUCT_BUNDLE_IDENTIFIER = bloop.hearth;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -430,14 +426,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = PXP453J347;
+				ENABLE_DEBUG_DYLIB = NO;
 				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = bloop;
+				PRODUCT_BUNDLE_IDENTIFIER = bloop.hearth;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

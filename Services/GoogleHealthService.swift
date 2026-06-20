@@ -32,7 +32,7 @@ class GoogleHealthService: HealthDataProvider {
         }
 
         let url = URL(string: "\(baseURL)/\(dataType.rawValue)/dataPoints")!
-        let filter = filterString(for: dataType, from: startDate)
+        let filter = filterString(for: dataType, from: startDate, to: endDate)
         
         let rawPoints = try await fetchAllPages(for: url, token: token, filter: filter)
 
@@ -46,7 +46,6 @@ class GoogleHealthService: HealthDataProvider {
         }
         // --- END VERBOSE LOGGING ---
 
-        do {
             // Special handling for intraday heartRate: no daily averaging or grouping
             if dataType == .heartRate {
                 var hrPoints: [HealthDataPoint] = []
@@ -152,11 +151,6 @@ class GoogleHealthService: HealthDataProvider {
             let strategy = isCumulative ? "summed" : (isAveraged ? "averaged" : "best-per-day")
             print("✅ [\(dataType.rawValue)] \(result.count) daily point(s) | \(strategy)")
             return result
-
-        } catch {
-            print("❌ [\(dataType.rawValue)] Decode failed: \(error)")
-            throw GoogleHealthError.decodingFailed
-        }
     }
 
     func fetchReconciledDataPoints(for dataType: HealthDataType, from startDate: Date, to endDate: Date) async throws -> [HealthDataPoint] {
@@ -165,24 +159,35 @@ class GoogleHealthService: HealthDataProvider {
 
     func fetchSleepData(from startDate: Date, to endDate: Date) async throws -> SleepData? {
         print("📡 Fetching sleep data...")
-        let rawPoints = try await fetchRawSleepPoints(from: startDate)
+        let rawPoints = try await fetchRawSleepPoints(from: startDate, to: endDate)
 
         // Filter sleep points to only those that represent a nocturnal/main sleep (duration >= 3 hours).
-        let sleepSessions = rawPoints.compactMap { parseSleepData(from: $0) }
+        let sleepSessions = rawPoints
+            .compactMap { parseSleepData(from: $0) }
+            .filter { Self.sleepSession($0, overlapsStart: startDate, end: endDate) }
         let validSessions = sleepSessions.filter { $0.totalTimeAsleep >= 10800 } // 3 hours
         
         // Pick the one with the maximum duration (longest sleep)
         return validSessions.max(by: { $0.totalTimeAsleep < $1.totalTimeAsleep })
     }
 
+    func fetchAllSleepSessions(from startDate: Date, to endDate: Date) async throws -> [SleepData] {
+        print("📡 Fetching all sleep sessions...")
+        let rawPoints = try await fetchRawSleepPoints(from: startDate, to: endDate)
+        return rawPoints
+            .compactMap { parseSleepData(from: $0) }
+            .filter { Self.sleepSession($0, overlapsStart: startDate, end: endDate) }
+    }
+
     func fetchSleepDataPoints(from startDate: Date, to endDate: Date) async throws -> [HealthDataPoint] {
         print("📡 Fetching sleep data points for trends...")
-        let rawPoints = try await fetchRawSleepPoints(from: startDate)
+        let rawPoints = try await fetchRawSleepPoints(from: startDate, to: endDate)
 
         // Group by wake-day key
         var bestByDay: [String: (sleep: SleepData, source: String)] = [:]
         for raw in rawPoints {
             guard let parsed = parseSleepDataAndSource(from: raw) else { continue }
+            guard Self.sleepSession(parsed.sleep, overlapsStart: startDate, end: endDate) else { continue }
             // Filter out naps (less than 3 hours)
             guard parsed.sleep.totalTimeAsleep >= 10800 else { continue }
             
@@ -211,31 +216,31 @@ class GoogleHealthService: HealthDataProvider {
     // MARK: - Sleep Shared Helpers
 
     /// Fetches raw sleep dataPoints starting from startDate from the Google Health API.
-    private func fetchRawSleepPoints(from startDate: Date) async throws -> [[String: Any]] {
+    private func fetchRawSleepPoints(from startDate: Date, to endDate: Date) async throws -> [[String: Any]] {
         guard let token = try await authManager.getAccessToken() else {
             throw GoogleHealthError.authenticationRequired
         }
         let url = URL(string: "\(baseURL)/sleep/dataPoints")!
-        
-        let isoFormatter = ISO8601DateFormatter()
-        isoFormatter.formatOptions = [.withInternetDateTime]
-        let dateStr = isoFormatter.string(from: startDate)
-        let filter = "sleep.interval.start_time >= \"\(dateStr)\""
-        
+
+        // Google Health does not currently support filtering sleep by interval members.
+        // Fetch the page set and constrain the requested range after parsing.
+        let filter = sleepFilterString(from: startDate, to: endDate)
         return try await fetchAllPages(for: url, token: token, filter: filter)
     }
 
     /// Fetches all pages recursively for a Google Health API endpoint.
-    private func fetchAllPages(for url: URL, token: String, filter: String) async throws -> [[String: Any]] {
+    private func fetchAllPages(for url: URL, token: String, filter: String?) async throws -> [[String: Any]] {
         var allPoints: [[String: Any]] = []
         var nextPageToken: String? = nil
         
         repeat {
             var urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: true)!
             var queryItems = [
-                URLQueryItem(name: "filter", value: filter),
                 URLQueryItem(name: "pageSize", value: "1000")
             ]
+            if let filter {
+                queryItems.insert(URLQueryItem(name: "filter", value: filter), at: 0)
+            }
             if let pageToken = nextPageToken {
                 queryItems.append(URLQueryItem(name: "pageToken", value: pageToken))
             }
@@ -270,15 +275,17 @@ class GoogleHealthService: HealthDataProvider {
     }
 
     /// Helper to format the AIP-160 filter parameter string for a specific data type and start date.
-    private func filterString(for dataType: HealthDataType, from startDate: Date) -> String {
+    private func filterString(for dataType: HealthDataType, from startDate: Date, to endDate: Date) -> String? {
         let snakeCaseName = dataType.rawValue.replacingOccurrences(of: "-", with: "_")
         
         if dataType.rawValue.hasPrefix("daily-") {
             let dateFormatter = DateFormatter()
             dateFormatter.dateFormat = "yyyy-MM-dd"
-            let dateStr = dateFormatter.string(from: startDate)
-            return "\(snakeCaseName).date >= \"\(dateStr)\""
-        } else if dataType == .dailyHeartRateVariability ||
+            let startDateStr = dateFormatter.string(from: startDate)
+            let endDateStr = dateFormatter.string(from: endDate)
+            return "\(snakeCaseName).date >= \"\(startDateStr)\" AND \(snakeCaseName).date < \"\(endDateStr)\""
+        } else if dataType == .heartRate ||
+                    dataType == .dailyHeartRateVariability ||
                     dataType == .weight ||
                     dataType == .bodyFat ||
                     dataType == .vo2Max ||
@@ -287,14 +294,25 @@ class GoogleHealthService: HealthDataProvider {
                     dataType == .bloodPressure {
             let isoFormatter = ISO8601DateFormatter()
             isoFormatter.formatOptions = [.withInternetDateTime]
-            let dateStr = isoFormatter.string(from: startDate)
-            return "\(snakeCaseName).sample_time.physical_time >= \"\(dateStr)\""
+            let startDateStr = isoFormatter.string(from: startDate)
+            let endDateStr = isoFormatter.string(from: endDate)
+            return "\(snakeCaseName).sample_time.physical_time >= \"\(startDateStr)\" AND \(snakeCaseName).sample_time.physical_time < \"\(endDateStr)\""
         } else {
             let isoFormatter = ISO8601DateFormatter()
             isoFormatter.formatOptions = [.withInternetDateTime]
-            let dateStr = isoFormatter.string(from: startDate)
-            return "\(snakeCaseName).interval.start_time >= \"\(dateStr)\""
+            let startDateStr = isoFormatter.string(from: startDate)
+            let endDateStr = isoFormatter.string(from: endDate)
+            return "\(snakeCaseName).interval.start_time >= \"\(startDateStr)\" AND \(snakeCaseName).interval.start_time < \"\(endDateStr)\""
         }
+    }
+
+    /// Google Health only supports sleep filtering by session end time.
+    private func sleepFilterString(from startDate: Date, to endDate: Date) -> String {
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime]
+        let startDateStr = isoFormatter.string(from: startDate)
+        let endDateStr = isoFormatter.string(from: endDate)
+        return "sleep.interval.end_time >= \"\(startDateStr)\" AND sleep.interval.end_time < \"\(endDateStr)\""
     }
 
     /// Parses both SleepData and its source label.
@@ -383,13 +401,16 @@ class GoogleHealthService: HealthDataProvider {
             return (v, date)
 
         case .dailyHeartRateVariability:
-            // Structure: { "heartRateVariability": { "sampleTime": {...}, "rootMeanSquareOfSuccessiveDifferencesMilliseconds": 46.7 } }
-            guard let hrv = point["heartRateVariability"] as? [String: Any] else { return nil }
+            // Daily HRV can be returned as dailyHeartRateVariability, while legacy/sample HRV
+            // responses use heartRateVariability.
+            guard let hrv = (point["dailyHeartRateVariability"] as? [String: Any])
+                    ?? (point["heartRateVariability"] as? [String: Any]) else { return nil }
             // Prefer RMSSD; fall back to SDNN if zero or missing
-            let rmssd = hrv["rootMeanSquareOfSuccessiveDifferencesMilliseconds"] as? Double
-            let sdnn  = hrv["standardDeviationMilliseconds"] as? Double
+            let rmssd = doubleFromStringOrNumber(hrv["rootMeanSquareOfSuccessiveDifferencesMilliseconds"])
+            let sdnn  = doubleFromStringOrNumber(hrv["standardDeviationMilliseconds"])
             guard let v = (rmssd.flatMap { $0 > 0 ? $0 : nil }) ?? sdnn, v > 0 else { return nil }
-            guard let date = parseSampleTimeDate(hrv["sampleTime"] as? [String: Any]) else { return nil }
+            guard let date = parseSimpleDate(hrv["date"] as? [String: Any])
+                    ?? parseSampleTimeDate(hrv["sampleTime"] as? [String: Any]) else { return nil }
             return (v, date)
 
         case .respiratoryRate:
@@ -404,36 +425,37 @@ class GoogleHealthService: HealthDataProvider {
             // Structure: { "activeEnergyBurned": { "interval": { "civilStartTime": { "date": {...} } }, "kcal": 1.89 } }
             guard let node = point["activeEnergyBurned"] as? [String: Any],
                   let kcal = doubleFromStringOrNumber(node["kcal"]),
-                  let date = parseCivilDate(from: node["interval"] as? [String: Any]) else { return nil }
+                  let date = parseIntervalDate(from: node["interval"] as? [String: Any]) else { return nil }
             return (kcal, date)
 
         case .steps:
             // Structure: { "steps": { "interval": { "civilStartTime": { "date": {...} } }, "count": 120 } }
             guard let node = point["steps"] as? [String: Any],
                   let count = doubleFromStringOrNumber(node["count"]),
-                  let date = parseCivilDate(from: node["interval"] as? [String: Any]) else { return nil }
+                  let date = parseIntervalDate(from: node["interval"] as? [String: Any]) else { return nil }
             return (count, date)
 
         case .distance:
             // Structure: { "distance": { "interval": { "civilStartTime": { "date": {...} } }, "meters": 45.6 } }
             guard let node = point["distance"] as? [String: Any],
                   let meters = doubleFromStringOrNumber(node["meters"]),
-                  let date = parseCivilDate(from: node["interval"] as? [String: Any]) else { return nil }
+                  let date = parseIntervalDate(from: node["interval"] as? [String: Any]) else { return nil }
             return (meters, date)
 
         case .heartRate:
-            // Structure: { "heartRate": { "interval": { "startTime": "...", "civilStartTime": { "date": {...} } }, "bpm": 72 } }
+            // Structure: { "heartRate": { "sampleTime": { "physicalTime": "..." }, "beatsPerMinute": 72 } }
             guard let node = point["heartRate"] as? [String: Any],
-                  let bpm = doubleFromStringOrNumber(node["bpm"]),
-                  let interval = node["interval"] as? [String: Any],
-                  let startTimeStr = interval["startTime"] as? String,
-                  let date = parseISO8601(startTimeStr) else { return nil }
+                  let bpm = doubleFromStringOrNumber(node["beatsPerMinute"]) ?? doubleFromStringOrNumber(node["bpm"]) else { return nil }
+
+            let date = parseSampleTimeDate(node["sampleTime"] as? [String: Any])
+                ?? parseIntervalDate(from: node["interval"] as? [String: Any])
+            guard let date else { return nil }
             return (bpm, date)
 
         case .activeZoneMinutes:
             // Structure: { "activeZoneMinutes": { "interval": { "civilStartTime": { "date": {...} } }, "fatBurnActiveZoneMinutes": 5, "cardioActiveZoneMinutes": 10, "peakActiveZoneMinutes": 2 } }
             guard let node = point["activeZoneMinutes"] as? [String: Any],
-                  let date = parseCivilDate(from: node["interval"] as? [String: Any]) else { return nil }
+                  let date = parseIntervalDate(from: node["interval"] as? [String: Any]) else { return nil }
             let fat     = doubleFromStringOrNumber(node["fatBurnActiveZoneMinutes"]) ?? 0
             let cardio  = doubleFromStringOrNumber(node["cardioActiveZoneMinutes"]) ?? 0
             let peak    = doubleFromStringOrNumber(node["peakActiveZoneMinutes"]) ?? 0
@@ -458,11 +480,30 @@ class GoogleHealthService: HealthDataProvider {
         return parseSimpleDate(dateDict)
     }
 
+    /// Extracts the best available start date from a Google Health interval.
+    private func parseIntervalDate(from interval: [String: Any]?) -> Date? {
+        if let civilDate = parseCivilDate(from: interval) {
+            return civilDate
+        }
+
+        if let startTimeStr = interval?["startTime"] as? String,
+           let date = parseISO8601(startTimeStr) {
+            return date
+        }
+
+        if let startTimeStr = interval?["physicalStartTime"] as? String,
+           let date = parseISO8601(startTimeStr) {
+            return date
+        }
+
+        return nil
+    }
+
     /// Walks top-level keys to find an `interval` dict and delegates to `parseCivilDate`.
     private func parseCivilDateFromAnyInterval(in point: [String: Any]) -> Date? {
         for value in point.values {
             if let nested = value as? [String: Any],
-               let date = parseCivilDate(from: nested["interval"] as? [String: Any]) {
+               let date = parseIntervalDate(from: nested["interval"] as? [String: Any]) {
                 return date
             }
         }
@@ -524,5 +565,9 @@ class GoogleHealthService: HealthDataProvider {
     private static func calendarKey(for date: Date) -> String {
         let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
         return "\(c.year ?? 0)-\(c.month ?? 0)-\(c.day ?? 0)"
+    }
+
+    private static func sleepSession(_ sleep: SleepData, overlapsStart startDate: Date, end endDate: Date) -> Bool {
+        sleep.wakeTime >= startDate && sleep.bedTime < endDate
     }
 }
