@@ -4,7 +4,6 @@ import SwiftUI
 struct TrendsView: View {
     @StateObject private var viewModel = TrendsViewModel()
     @State private var showMetricPicker = false
-    @State private var showSecondaryMetricPicker = false
 
     var body: some View {
         ZStack {
@@ -15,11 +14,8 @@ struct TrendsView: View {
                     // Header
                     trendsHeader
 
-                    // Metric Picker
-                    metricPickerButton
-                    
-                    // Secondary Metric Picker
-                    secondaryMetricPickerButton
+                    // Metric Picker Chips
+                    metricChipsRow
 
                     // Average + Period Toggle
                     averageAndPeriodSection
@@ -48,9 +44,6 @@ struct TrendsView: View {
         .sheet(isPresented: $showMetricPicker) {
             metricPickerSheet
         }
-        .sheet(isPresented: $showSecondaryMetricPicker) {
-            secondaryMetricPickerSheet
-        }
     }
 
     // MARK: - Header
@@ -77,104 +70,58 @@ struct TrendsView: View {
         .padding(.top, 16)
     }
 
-    // MARK: - Metric Picker
+    // MARK: - Metric Chips
 
-    private var metricPickerButton: some View {
-        Button(action: { showMetricPicker = true }) {
-            HStack {
-                Image(systemName: viewModel.selectedMetric.icon)
-                    .font(.system(size: 14))
-                    .foregroundColor(Color(hex: "00E08F"))
-
-                Text(viewModel.selectedMetric.rawValue)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.white)
-
-                Spacer()
-
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.gray)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white.opacity(0.06))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                    )
-            )
-        }
-        .padding(.horizontal)
-    }
-
-    // MARK: - Secondary Metric Picker
-
-    private var secondaryMetricPickerButton: some View {
-        HStack {
-            if let secondaryMetric = viewModel.selectedSecondaryMetric {
-                Button(action: { showSecondaryMetricPicker = true }) {
-                    HStack {
-                        Image(systemName: secondaryMetric.icon)
-                            .font(.system(size: 14))
-                            .foregroundColor(Color(hex: "5B86E5"))
-
-                        Text(secondaryMetric.rawValue)
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(.white)
-
-                        Spacer()
-
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.gray)
+    private var metricChipsRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                ForEach(TrendsViewModel.TrendMetric.allCases.prefix(5)) { metric in
+                    let isSelected = viewModel.selectedMetric == metric
+                    let accentColor = Color(hex: metric.colorHex)
+                    
+                    Button(action: {
+                        viewModel.selectedMetric = metric
+                        Task { await viewModel.loadData() }
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: metric.icon)
+                                .font(.system(size: 12))
+                            Text(metric.rawValue)
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .foregroundColor(isSelected ? accentColor : .gray)
+                        .background(
+                            isSelected ? accentColor.opacity(0.15) : Color.white.opacity(0.06)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(isSelected ? accentColor.opacity(0.3) : Color.white.opacity(0.08), lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white.opacity(0.06))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                            )
-                    )
                 }
                 
-                Button(action: {
-                    viewModel.selectedSecondaryMetric = nil
-                    Task { await viewModel.loadData() }
-                }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundColor(.gray.opacity(0.6))
-                        .padding(.leading, 8)
-                }
-            } else {
-                Button(action: { showSecondaryMetricPicker = true }) {
-                    HStack {
-                        Image(systemName: "plus.circle")
+                // More chip
+                if TrendsViewModel.TrendMetric.allCases.count > 5 {
+                    Button(action: { showMetricPicker = true }) {
+                        Image(systemName: "ellipsis")
                             .font(.system(size: 14))
                             .foregroundColor(.gray)
-
-                        Text("Compare with another metric")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.gray)
-
-                        Spacer()
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(Color.white.opacity(0.06))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white.opacity(0.1), style: StrokeStyle(lineWidth: 1, lineCap: .round, lineJoin: .round, dash: [4, 4]))
-                    )
                 }
             }
+            .padding(.horizontal)
         }
-        .padding(.horizontal)
     }
 
     // MARK: - Average + Period
@@ -264,110 +211,142 @@ struct TrendsView: View {
                 Spacer()
                 Text(viewModel.selectedMetric.unit.uppercased())
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(Color(hex: "FFC700").opacity(0.7))
+                    .foregroundColor(Color(hex: viewModel.selectedMetric.colorHex).opacity(0.7))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(Color(hex: "FFC700").opacity(0.1))
+                    .background(Color(hex: viewModel.selectedMetric.colorHex).opacity(0.1))
                     .clipShape(Capsule())
             }
 
-            // Bar chart of period averages
+            // Line chart
             GeometryReader { geometry in
-                let isZoomed = viewModel.selectedMetric != .sleepDuration && viewModel.selectedMetric != .steps
-                let allVals = viewModel.periodAverages.map(\.average)
-                let maxVal = allVals.max() ?? 1
-                let minVal = isZoomed ? (allVals.min() ?? 0) * 0.95 : 0
-                let range = max(maxVal - minVal, 1)
+                let accentColor = Color(hex: viewModel.selectedMetric.colorHex)
+                let validVals = viewModel.periodAverages.compactMap { $0.average }
+                let scaleMode = viewModel.selectedMetric.scaleMode
                 
-                // For secondary metric line
-                let secAllVals = viewModel.secondaryPeriodAverages.map(\.average)
-                let secMaxVal = secAllVals.max() ?? 1
-                let secMinVal = isZoomed ? (secAllVals.min() ?? 0) * 0.95 : 0
-                let secRange = max(secMaxVal - secMinVal, 1)
+                let maxVal = validVals.max() ?? 1
+                let minVal: Double = {
+                    if validVals.isEmpty { return 0 }
+                    if scaleMode == .zeroBased { return 0 }
+                    // tight scaling: add slight padding
+                    let currentMin = validVals.min() ?? 0
+                    let range = maxVal - currentMin
+                    return max(0, currentMin - (range * 0.1)) // 10% padding below
+                }()
+                let range = max(maxVal - minVal, 1)
 
-                let barWidth = max(20, (geometry.size.width - CGFloat(viewModel.periodAverages.count - 1) * 8) / CGFloat(max(viewModel.periodAverages.count, 1)))
-
+                let count = viewModel.periodAverages.count
+                let stepX = count > 1 ? geometry.size.width / CGFloat(count) : geometry.size.width
+                
+                // Gridlines (3 lines: top, middle, bottom)
+                let gridlines = [maxVal, minVal + (range / 2), minVal]
+                
                 ZStack {
-                    HStack(alignment: .bottom, spacing: 8) {
-                        ForEach(viewModel.periodAverages) { period in
-                            VStack(spacing: 6) {
-                                // Value label
-                                Text(viewModel.formatValue(period.average))
-                                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                                    .foregroundColor(.white)
-
-                                // Percent change
-                                if let change = period.percentChange {
-                                    let isGood = viewModel.selectedMetric.isLowerBetter ? change < 0 : change > 0
-                                    Text(String(format: "%+.0f%%", change))
-                                        .font(.system(size: 9, weight: .semibold))
-                                        .foregroundColor(isGood ? Color(hex: "00E08F") : Color(hex: "FF334B"))
-                                } else {
-                                    Text(" ")
-                                        .font(.system(size: 9, weight: .semibold))
-                                }
-
-                                // Bar
-                                let barHeight = max(4, geometry.size.height * 0.5 * CGFloat((period.average - minVal) / range))
-                                RoundedRectangle(cornerRadius: 3)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [Color(hex: "FFC700").opacity(0.5), Color(hex: "FFC700")],
-                                            startPoint: .bottom,
-                                            endPoint: .top
-                                        )
-                                    )
-                                    .frame(width: min(barWidth, 50), height: barHeight)
-
-                                // Label
-                                Text(period.label)
-                                    .font(.system(size: 10, weight: .medium))
-                                    .foregroundColor(.gray)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                    }
-                    
-                    // Secondary line overlay
-                    if viewModel.selectedSecondaryMetric != nil, viewModel.secondaryPeriodAverages.count == viewModel.periodAverages.count {
+                    // Background gridlines and labels
+                    ForEach(0..<gridlines.count, id: \.self) { i in
+                        let val = gridlines[i]
+                        let h = geometry.size.height * 0.7 * CGFloat((val - minVal) / range)
+                        let y = geometry.size.height - 35 - h
+                        
                         Path { path in
-                            let count = viewModel.periodAverages.count
-                            let stepX = geometry.size.width / CGFloat(count)
-                            for i in 0..<count {
+                            path.move(to: CGPoint(x: 0, y: y))
+                            path.addLine(to: CGPoint(x: geometry.size.width - 30, y: y))
+                        }
+                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                        
+                        Text(viewModel.formatValue(val))
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(.gray.opacity(0.6))
+                            .position(x: geometry.size.width - 10, y: y)
+                    }
+
+                    // Connecting Line
+                    Path { path in
+                        var firstPoint = true
+                        for i in 0..<count {
+                            let item = viewModel.periodAverages[i]
+                            if let avg = item.average {
                                 let x = stepX * CGFloat(i) + stepX / 2.0
-                                let avg = viewModel.secondaryPeriodAverages[i].average
-                                // The Y goes from top (0) to bottom (height) for drawing, but our bar area is roughly the bottom 50%
-                                // We'll map the line to the same height scale:
-                                let h = geometry.size.height * 0.5 * CGFloat((avg - secMinVal) / secRange)
-                                // Top of bar area is at geometry.size.height - h - text offsets
-                                // Let's just draw it within the chart area:
-                                let y = geometry.size.height - 20 - h // 20 roughly for the bottom label
-                                if i == 0 {
+                                let h = geometry.size.height * 0.7 * CGFloat((avg - minVal) / range)
+                                let y = geometry.size.height - 35 - h
+                                
+                                if firstPoint {
                                     path.move(to: CGPoint(x: x, y: y))
+                                    firstPoint = false
                                 } else {
                                     path.addLine(to: CGPoint(x: x, y: y))
                                 }
+                            } else {
+                                firstPoint = true // Break the line for missing data
                             }
                         }
-                        .stroke(Color(hex: "5B86E5"), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                    }
+                    .stroke(accentColor, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+
+                    // Points and X-Axis Labels
+                    ForEach(0..<count, id: \.self) { i in
+                        let item = viewModel.periodAverages[i]
+                        let x = stepX * CGFloat(i) + stepX / 2.0
+                        let isMostRecent = i == count - 1
                         
-                        // Dots for the secondary line
-                        let count = viewModel.periodAverages.count
-                        let stepX = geometry.size.width / CGFloat(count)
-                        ForEach(0..<count, id: \.self) { i in
-                            let x = stepX * CGFloat(i) + stepX / 2.0
-                            let avg = viewModel.secondaryPeriodAverages[i].average
-                            let h = geometry.size.height * 0.5 * CGFloat((avg - secMinVal) / secRange)
-                            let y = geometry.size.height - 20 - h
-                            Circle()
-                                .fill(Color(hex: "5B86E5"))
-                                .frame(width: 6, height: 6)
-                                .position(x: x, y: y)
+                        if let avg = item.average {
+                            let h = geometry.size.height * 0.7 * CGFloat((avg - minVal) / range)
+                            let y = geometry.size.height - 35 - h
+                            
+                            // Point Marker
+                            if isMostRecent {
+                                // Emphasized point
+                                Circle()
+                                    .fill(accentColor.opacity(0.3))
+                                    .frame(width: 14, height: 14)
+                                    .position(x: x, y: y)
+                                Circle()
+                                    .fill(accentColor)
+                                    .frame(width: 8, height: 8)
+                                    .position(x: x, y: y)
+                            } else {
+                                // Regular hollow point
+                                Circle()
+                                    .stroke(accentColor, lineWidth: 2)
+                                    .background(Circle().fill(Color.black))
+                                    .frame(width: 8, height: 8)
+                                    .position(x: x, y: y)
+                            }
+                            
+                            // Point Value Label (optional, currently disabled to avoid clutter)
+                            /*
+                            Text(viewModel.formatValue(avg))
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.white)
+                                .position(x: x, y: y - 16)
+                            */
                         }
+                        
+                        // X-Axis Label
+                        VStack(spacing: 2) {
+                            Text(item.label)
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(.gray)
+                            if let subLabel = item.subLabel {
+                                Text(subLabel)
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        .position(x: x, y: geometry.size.height - 10)
                     }
                 }
             }
-            .frame(height: 180)
+            .frame(height: 200)
+            
+            // Missing Data Caption
+            if viewModel.periodAverages.contains(where: { $0.average == nil }) {
+                let missingCount = viewModel.periodAverages.filter { $0.average == nil }.count
+                Text("\(missingCount) period(s) — no data synced.")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.gray.opacity(0.7))
+                    .padding(.top, 4)
+            }
         }
         .padding(20)
         .background(
@@ -389,7 +368,7 @@ struct TrendsView: View {
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.gray)
         }
-        .frame(height: 180)
+        .frame(height: 200)
     }
 
     private var chartEmptyView: some View {
@@ -401,7 +380,7 @@ struct TrendsView: View {
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.gray.opacity(0.5))
         }
-        .frame(height: 180)
+        .frame(height: 200)
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 16)
@@ -410,7 +389,7 @@ struct TrendsView: View {
         .padding(.horizontal)
     }
 
-    // MARK: - Metric Picker Sheets
+    // MARK: - Metric Picker Sheet
 
     private var metricPickerSheet: some View {
         NavigationView {
@@ -427,7 +406,7 @@ struct TrendsView: View {
                             HStack {
                                 Image(systemName: metric.icon)
                                     .font(.system(size: 16))
-                                    .foregroundColor(Color(hex: "00E08F"))
+                                    .foregroundColor(Color(hex: metric.colorHex))
                                     .frame(width: 28)
 
                                 Text(metric.rawValue)
@@ -439,7 +418,7 @@ struct TrendsView: View {
                                 if viewModel.selectedMetric == metric {
                                     Image(systemName: "checkmark")
                                         .font(.system(size: 14, weight: .bold))
-                                        .foregroundColor(Color(hex: "00E08F"))
+                                        .foregroundColor(Color(hex: metric.colorHex))
                                 }
                             }
                             .padding(.vertical, 4)
@@ -454,56 +433,7 @@ struct TrendsView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") { showMetricPicker = false }
-                        .foregroundColor(Color(hex: "00E08F"))
-                }
-            }
-        }
-        .preferredColorScheme(.dark)
-    }
-
-    private var secondaryMetricPickerSheet: some View {
-        NavigationView {
-            ZStack {
-                Color(white: 0.08).edgesIgnoringSafeArea(.all)
-
-                List {
-                    ForEach(TrendsViewModel.TrendMetric.allCases) { metric in
-                        Button(action: {
-                            viewModel.selectedSecondaryMetric = metric
-                            showSecondaryMetricPicker = false
-                            Task { await viewModel.loadData() }
-                        }) {
-                            HStack {
-                                Image(systemName: metric.icon)
-                                    .font(.system(size: 16))
-                                    .foregroundColor(Color(hex: "5B86E5"))
-                                    .frame(width: 28)
-
-                                Text(metric.rawValue)
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.white)
-
-                                Spacer()
-
-                                if viewModel.selectedSecondaryMetric == metric {
-                                    Image(systemName: "checkmark")
-                                        .font(.system(size: 14, weight: .bold))
-                                        .foregroundColor(Color(hex: "5B86E5"))
-                                }
-                            }
-                            .padding(.vertical, 4)
-                        }
-                        .listRowBackground(Color.white.opacity(0.04))
-                    }
-                }
-                .scrollContentBackground(.hidden)
-            }
-            .navigationTitle("Select Secondary Metric")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { showSecondaryMetricPicker = false }
-                        .foregroundColor(Color(hex: "5B86E5"))
+                        .foregroundColor(Color(hex: viewModel.selectedMetric.colorHex))
                 }
             }
         }

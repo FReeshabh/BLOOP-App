@@ -8,11 +8,11 @@ struct TrendDataPoint: Identifiable {
     let value: Double
 }
 
-/// A grouped period average for display.
 struct PeriodAverage: Identifiable {
     let id = UUID()
     let label: String       // e.g. "Mar", "Apr"
-    let average: Double
+    let subLabel: String?   // e.g. "14" or "2024"
+    let average: Double?    // nil if missing data
     let percentChange: Double?  // vs previous period
 }
 
@@ -21,6 +21,11 @@ final class TrendsViewModel: ObservableObject {
 
     // MARK: - Types
 
+    enum ScaleMode {
+        case tight
+        case zeroBased
+    }
+
     enum TrendMetric: String, CaseIterable, Identifiable {
         case restingHeartRate  = "Resting heart rate"
         case hrv               = "Heart rate variability"
@@ -28,6 +33,7 @@ final class TrendsViewModel: ObservableObject {
         case steps             = "Steps"
         case respiratoryRate   = "Respiratory rate"
         case weight            = "Weight"
+        case activeZoneMinutes = "Active Zone Minutes"
 
         var id: String { rawValue }
 
@@ -39,6 +45,7 @@ final class TrendsViewModel: ObservableObject {
             case .steps:           return "figure.walk"
             case .respiratoryRate: return "lungs.fill"
             case .weight:          return "scalemass.fill"
+            case .activeZoneMinutes: return "flame.fill"
             }
         }
 
@@ -50,6 +57,7 @@ final class TrendsViewModel: ObservableObject {
             case .steps:           return "steps"
             case .respiratoryRate: return "br/min"
             case .weight:          return "lbs"
+            case .activeZoneMinutes: return "min"
             }
         }
 
@@ -61,13 +69,33 @@ final class TrendsViewModel: ObservableObject {
             case .steps:           return .steps
             case .respiratoryRate: return .respiratoryRate
             case .weight:          return .weight
+            case .activeZoneMinutes: return .activeZoneMinutes
             }
         }
         
         var isLowerBetter: Bool {
             switch self {
             case .restingHeartRate, .weight, .respiratoryRate: return true
-            case .hrv, .sleepDuration, .steps: return false
+            case .hrv, .sleepDuration, .steps, .activeZoneMinutes: return false
+            }
+        }
+
+        var colorHex: String {
+            switch self {
+            case .restingHeartRate: return "D4537E" // rose/pink
+            case .sleepDuration:    return "5DCAA5" // green/teal
+            case .steps, .weight, .activeZoneMinutes: return "378ADE" // blue
+            case .hrv:              return "E24B4A" // red
+            case .respiratoryRate:  return "D4537E" // rose
+            }
+        }
+
+        var scaleMode: ScaleMode {
+            switch self {
+            case .restingHeartRate, .hrv, .sleepDuration, .respiratoryRate, .weight:
+                return .tight
+            case .steps, .activeZoneMinutes:
+                return .zeroBased
             }
         }
     }
@@ -91,12 +119,9 @@ final class TrendsViewModel: ObservableObject {
     // MARK: - Published State
 
     @Published var selectedMetric: TrendMetric = .restingHeartRate
-    @Published var selectedSecondaryMetric: TrendMetric? = nil
-    @Published var selectedPeriod: TimePeriod = .sixMonth
+    @Published var selectedPeriod: TimePeriod = .week
     @Published var dataPoints: [TrendDataPoint] = []
-    @Published var secondaryDataPoints: [TrendDataPoint] = []
     @Published var periodAverages: [PeriodAverage] = []
-    @Published var secondaryPeriodAverages: [PeriodAverage] = []
     @Published var overallAverage: Double = 0
     @Published var totalDays: Int = 0
     @Published var isLoading: Bool = false
@@ -182,34 +207,11 @@ final class TrendsViewModel: ObservableObject {
             // Group into period averages
             self.periodAverages = computePeriodAverages(from: filtered, period: selectedPeriod, startDate: startDate)
 
-            // Fetch Secondary Metric if selected
-            if let secondary = selectedSecondaryMetric {
-                let secFetched: [HealthDataPoint]
-                if secondary == .sleepDuration {
-                    secFetched = try await healthService.fetchSleepDataPoints(from: startDate, to: now)
-                } else {
-                    secFetched = try await healthService.fetchDataPoints(
-                        for: secondary.healthDataType,
-                        from: startDate,
-                        to: now
-                    )
-                }
-                let secFiltered = secFetched.filter { $0.startTime >= startDate }
-                self.secondaryDataPoints = secFiltered.map { TrendDataPoint(date: $0.startTime, value: $0.value) }
-                    .sorted { $0.date < $1.date }
-                self.secondaryPeriodAverages = computePeriodAverages(from: secFiltered, period: selectedPeriod, startDate: startDate)
-            } else {
-                self.secondaryDataPoints = []
-                self.secondaryPeriodAverages = []
-            }
-
         } catch {
             print("Trends fetch error: \(error)")
             self.dataPoints = []
-            self.secondaryDataPoints = []
             self.overallAverage = 0
             self.periodAverages = []
-            self.secondaryPeriodAverages = []
         }
 
         isLoading = false
@@ -233,22 +235,19 @@ final class TrendsViewModel: ObservableObject {
         switch period {
         case .week:
             formatter.dateFormat = "EEE"
+            let dayFormatter = DateFormatter()
+            dayFormatter.dateFormat = "d"
             var averages: [PeriodAverage] = []
             for i in 0..<7 {
                 let dayStart = calendar.date(byAdding: .day, value: i, to: calendar.startOfDay(for: startDate))!
                 let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart)!
                 let bucketPoints = points.filter { $0.startTime >= dayStart && $0.startTime < dayEnd }
-                let avg = bucketPoints.isEmpty ? 0 : bucketPoints.map(\.value).reduce(0, +) / Double(bucketPoints.count)
+                let avg = bucketPoints.isEmpty ? nil : bucketPoints.map(\.value).reduce(0, +) / Double(bucketPoints.count)
                 
-                let change: Double? = {
-                    guard i > 0 else { return nil }
-                    let prevDayStart = calendar.date(byAdding: .day, value: i - 1, to: calendar.startOfDay(for: startDate))!
-                    let prevPoints = points.filter { $0.startTime >= prevDayStart && $0.startTime < dayStart }
-                    let prevAvg = prevPoints.isEmpty ? 0 : prevPoints.map(\.value).reduce(0, +) / Double(prevPoints.count)
-                    return prevAvg > 0 ? ((avg - prevAvg) / prevAvg * 100) : 0
-                }()
+                let change: Double? = nil // disabled percentage change
                 let label = formatter.string(from: dayStart)
-                averages.append(PeriodAverage(label: label, average: avg, percentChange: change))
+                let subLabel = dayFormatter.string(from: dayStart)
+                averages.append(PeriodAverage(label: label, subLabel: subLabel, average: avg, percentChange: change))
             }
             return averages
 
@@ -259,7 +258,7 @@ final class TrendsViewModel: ObservableObject {
             return grouped.sorted { $0.key < $1.key }.enumerated().map { index, pair in
                 let avg = pair.value.map(\.value).reduce(0, +) / Double(pair.value.count)
                 let label = pair.value.first.map { formatter.string(from: $0.startTime) } ?? "W\(pair.key)"
-                return PeriodAverage(label: label, average: avg, percentChange: nil)
+                return PeriodAverage(label: label, subLabel: nil, average: avg, percentChange: nil)
             }
 
         case .sixMonth:
@@ -267,13 +266,8 @@ final class TrendsViewModel: ObservableObject {
             groupedByMonth = Dictionary(grouping: points) { calendar.component(.month, from: $0.startTime) }
             return groupedByMonth.sorted { $0.key < $1.key }.enumerated().map { index, pair in
                 let avg = pair.value.map(\.value).reduce(0, +) / Double(pair.value.count)
-                let prevAvg: Double? = index > 0 ? {
-                    let prevPair = groupedByMonth.sorted { $0.key < $1.key }[index - 1]
-                    return prevPair.value.map(\.value).reduce(0, +) / Double(prevPair.value.count)
-                }() : nil
-                let change = prevAvg.map { prev in prev > 0 ? ((avg - prev) / prev * 100) : 0 }
                 let label = pair.value.first.map { formatter.string(from: $0.startTime) } ?? "\(pair.key)"
-                return PeriodAverage(label: label, average: avg, percentChange: change)
+                return PeriodAverage(label: label, subLabel: nil, average: avg, percentChange: nil)
             }
         }
     }
