@@ -32,7 +32,7 @@ struct ScoreRingsRowView: View {
 
             ScoreRingView(
                 score: readinessScore,
-                label: "Readiness",
+                label: "Resilience*",
                 icon: "gauge.with.dots.needle.33percent",
                 ringColor: Color(hex: "00E08F"),
                 showPercent: false,

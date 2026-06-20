@@ -373,12 +373,22 @@ struct TrendsView: View {
 
     private var chartEmptyView: some View {
         VStack(spacing: 12) {
-            Image(systemName: "chart.line.uptrend.xyaxis")
+            Image(systemName: viewModel.selectedMetric == .hrv ? "waveform.path.ecg" : "chart.line.uptrend.xyaxis")
                 .font(.system(size: 32))
                 .foregroundColor(.gray.opacity(0.3))
-            Text("No historical data available for this period")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.gray.opacity(0.5))
+            
+            if viewModel.selectedMetric == .hrv {
+                Text("No HRV data synced for this period.")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.gray.opacity(0.5))
+                Text("Your device may not report HRV.")
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundColor(.gray.opacity(0.4))
+            } else {
+                Text("No historical data available for this period")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.gray.opacity(0.5))
+            }
         }
         .frame(height: 200)
         .frame(maxWidth: .infinity)

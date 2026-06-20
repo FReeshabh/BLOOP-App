@@ -76,14 +76,16 @@ struct ReadinessDetailView: View {
     // MARK: - Insight Text
 
     private var insightText: String {
+        let baseText: String
         switch score.band {
         case .green:
-            return "Your HRV, resting HR, sleep and load balance are in a strong place today."
+            baseText = "Your HRV, resting HR, sleep and load balance are in a strong place today."
         case .yellow:
-            return "Your vitals are in an adequate range. Consider moderate activity and prioritize good sleep."
+            baseText = "Your vitals are in an adequate range. Consider moderate activity and prioritize good sleep."
         case .red:
-            return "Your body is showing signs of stress. Prioritize rest, hydration, and recovery today."
+            baseText = "Your body is showing signs of stress. Prioritize rest, hydration, and recovery today."
         }
+        return baseText + "\n\nResilience is an estimated score computed from your sleep duration, resting heart rate, and HRV trends."
     }
 
     // MARK: - Vitals Card

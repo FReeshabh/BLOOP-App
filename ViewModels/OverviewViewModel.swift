@@ -32,6 +32,16 @@ final class OverviewViewModel: ObservableObject {
     @Published var showHistoricalSyncPrompt: Bool = false
     @Published var historicalSyncProgress: Double = 0.0
 
+    // Date Selection
+    @Published var selectedDate: Date = Date() {
+        didSet {
+            Task {
+                // When date changes, we need to load data but we don't have modelContext here directly
+                // So the View will observe this and call loadData.
+            }
+        }
+    }
+
     // MARK: - Dependencies
 
     private let healthService: HealthDataProvider
@@ -53,7 +63,7 @@ final class OverviewViewModel: ObservableObject {
         sleepData?.sleepPerformance ?? 0
     }
 
-    /// Readiness / Recovery 0–100.
+    /// Readiness / Recovery 0–100. (Now presented as Resilience in UI)
     var readinessScore: Int {
         recoveryScore?.score ?? 0
     }
@@ -94,20 +104,20 @@ final class OverviewViewModel: ObservableObject {
     private func updateInsights() {
         if recoveryScore == nil {
             insightHeadline = "Collecting Baseline"
-            insightExplanation = "We're gathering more data to build your accurate recovery profile."
+            insightExplanation = "We're gathering more data to build your accurate resilience profile."
             return
         }
         
         let score = readinessScore
         if score >= 66 {
-            insightHeadline = "Recovery is solid today."
+            insightHeadline = "Resilience is solid today."
             if estimatedStress > 50 {
                 insightExplanation = "You're well-recovered, but watch your stress levels as the day goes on."
             } else {
                 insightExplanation = "Your body is primed to take on more strain. Consider pushing harder."
             }
         } else if score >= 33 {
-            insightHeadline = "Recovery is adequate."
+            insightHeadline = "Resilience is adequate."
             insightExplanation = "You're in a good spot, but don't overexert yourself. Keep things balanced."
         } else {
             insightHeadline = "Your body needs rest."
@@ -129,26 +139,33 @@ final class OverviewViewModel: ObservableObject {
             // Small delay to let auth settle
             try await Task.sleep(nanoseconds: 500_000_000)
 
-            let now = Date()
             let calendar = Calendar.current
-            let startOfDay = calendar.startOfDay(for: now)
-            let yesterday = calendar.date(byAdding: .day, value: -1, to: now)!
-            let startOfYesterday = calendar.startOfDay(for: yesterday)
-            let thirtyDaysAgo = calendar.date(byAdding: .day, value: -30, to: now)!
+            
+            // Adjust queries relative to `selectedDate` instead of `Date()`
+            // Since `selectedDate` might be in the middle of the day, we query from start of that day
+            // up to the end of that day (or current time if it's today)
+            let isToday = calendar.isDateInToday(selectedDate)
+            let endOfSelectedDay = isToday ? Date() : calendar.date(bySettingHour: 23, minute: 59, second: 59, of: selectedDate)!
+            let startOfSelectedDay = calendar.startOfDay(for: selectedDate)
+            
+            let previousDay = calendar.date(byAdding: .day, value: -1, to: selectedDate)!
+            let startOfPreviousDay = calendar.startOfDay(for: previousDay)
+            let thirtyDaysAgo = calendar.date(byAdding: .day, value: -30, to: selectedDate)!
 
             // Fetch everything concurrently - biometric baselines require 30 days of data
-            async let fetchHRV   = fetchOptionalPoints(for: .dailyHeartRateVariability, from: thirtyDaysAgo, to: now)
-            async let fetchRHR   = fetchOptionalPoints(for: .dailyRestingHeartRate, from: thirtyDaysAgo, to: now)
-            async let fetchResp  = fetchOptionalPoints(for: .respiratoryRate, from: thirtyDaysAgo, to: now)
-            async let fetchHR    = fetchOptionalPoints(for: .heartRate, from: startOfDay, to: now)
-            async let fetchSteps = fetchOptionalPoints(for: .steps, from: startOfDay, to: now)
-            async let fetchDist  = fetchOptionalPoints(for: .distance, from: startOfDay, to: now)
-            async let fetchAZM   = fetchOptionalPoints(for: .activeZoneMinutes, from: startOfDay, to: now)
-            async let fetchCal   = fetchOptionalPoints(for: .activeEnergyBurned, from: startOfDay, to: now)
-            async let fetchSleep = fetchOptionalSleepSessions(from: startOfYesterday, to: now)
+            async let fetchHRV   = fetchOptionalPoints(for: .dailyHeartRateVariability, from: thirtyDaysAgo, to: endOfSelectedDay)
+            async let fetchRHR   = fetchOptionalPoints(for: .dailyRestingHeartRate, from: thirtyDaysAgo, to: endOfSelectedDay)
+            async let fetchResp  = fetchOptionalPoints(for: .respiratoryRate, from: thirtyDaysAgo, to: endOfSelectedDay)
+            async let fetchHR    = fetchOptionalPoints(for: .heartRate, from: startOfSelectedDay, to: endOfSelectedDay)
+            async let fetchSteps = fetchOptionalPoints(for: .steps, from: startOfSelectedDay, to: endOfSelectedDay)
+            async let fetchDist  = fetchOptionalPoints(for: .distance, from: startOfSelectedDay, to: endOfSelectedDay)
+            async let fetchAZM   = fetchOptionalPoints(for: .activeZoneMinutes, from: startOfSelectedDay, to: endOfSelectedDay)
+            async let fetchCal   = fetchOptionalPoints(for: .activeEnergyBurned, from: startOfSelectedDay, to: endOfSelectedDay)
+            async let fetchSleep = fetchOptionalSleepSessions(from: startOfPreviousDay, to: endOfSelectedDay)
+            async let fetchExercises = fetchOptionalExerciseSessions(from: startOfSelectedDay, to: endOfSelectedDay)
 
-            let (hrvData, rhrData, respData, hrData, stepsData, distData, azmData, calData, allSleeps) =
-                try await (fetchHRV, fetchRHR, fetchResp, fetchHR, fetchSteps, fetchDist, fetchAZM, fetchCal, fetchSleep)
+            let (hrvData, rhrData, respData, hrData, stepsData, distData, azmData, calData, allSleeps, allExercises) =
+                try await (fetchHRV, fetchRHR, fetchResp, fetchHR, fetchSteps, fetchDist, fetchAZM, fetchCal, fetchSleep, fetchExercises)
 
             // Scalar overnight metrics: take the most recent value (already sorted newest-first).
             // These are Fitbit nightly computations and may be stamped as yesterday or today.
@@ -217,7 +234,7 @@ final class OverviewViewModel: ObservableObject {
             let dayStrain = load > 0 ? min(21.0, max(0.0, 2.5 * log(load + 1))) : 0.0
 
             self.strainData = StrainData(
-                date: now,
+                date: selectedDate,
                 dayStrain: dayStrain,
                 // HR zone minutes require continuous zone-tagged HR data which the Google Health
                 // API doesn't surface via the active-zone-minutes endpoint — left as 0 for now.
@@ -227,7 +244,7 @@ final class OverviewViewModel: ObservableObject {
                 steps: Int(todayStepsVal),
                 distance: distanceMiles,
                 activeZoneMinutes: todayAZM,
-                activities: []
+                activities: allExercises
             )
 
             // --- Overview cards ---
@@ -336,6 +353,22 @@ final class OverviewViewModel: ObservableObject {
             throw GoogleHealthError.apiError(message)
         } catch {
             print("⚠️ Skipping sleep: \(error.localizedDescription)")
+            return []
+        }
+    }
+
+    private func fetchOptionalExerciseSessions(from startDate: Date, to endDate: Date) async throws -> [ActivitySession] {
+        do {
+            if let service = healthService as? GoogleHealthService {
+                return try await service.fetchExerciseSessions(from: startDate, to: endDate)
+            }
+            return []
+        } catch GoogleHealthError.authenticationRequired {
+            throw GoogleHealthError.authenticationRequired
+        } catch let GoogleHealthError.apiError(message) where message.contains("401") || message.contains("403") {
+            throw GoogleHealthError.apiError(message)
+        } catch {
+            print("⚠️ Skipping exercises: \(error.localizedDescription)")
             return []
         }
     }

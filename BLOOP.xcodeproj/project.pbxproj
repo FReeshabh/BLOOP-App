@@ -30,6 +30,7 @@
 		98F9782BED6604DCD9BE3FA2 /* OverviewMetricCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 255241A1D0954DA67310D772 /* OverviewMetricCardView.swift */; };
 		AED922D30438FACC69CE098F /* UserBaselineEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C95A1F06F7ACA516AC96D44C /* UserBaselineEntity.swift */; };
 		BB851CD6406C9D107011DF4E /* LoadDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1DBF6F8EAAC0716FFC2B0D4 /* LoadDetailView.swift */; };
+		77E71CD6406C9D107011DF4F /* ActivitiesDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77DBF6F8EAAC0716FFC2B0D5 /* ActivitiesDetailView.swift */; };
 		BEE597E964B2D40431059D5E /* RecoveryScoreEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2445973C8C31B1B2F8A5586 /* RecoveryScoreEngine.swift */; };
 		BFEB096BB2874604F5F47709 /* ReadinessDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4278E0FEC9678BE0C29659DB /* ReadinessDetailView.swift */; };
 		C1BCFB1AAF2E13F6F3477687 /* HealthDataType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7761B174832F0F4C0E25860E /* HealthDataType.swift */; };
@@ -79,6 +80,7 @@
 		DE2E0441DF668497598C7616 /* OverviewDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewDashboardView.swift; sourceTree = "<group>"; };
 		E2445973C8C31B1B2F8A5586 /* RecoveryScoreEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryScoreEngine.swift; sourceTree = "<group>"; };
 		F1DBF6F8EAAC0716FFC2B0D4 /* LoadDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadDetailView.swift; sourceTree = "<group>"; };
+		77DBF6F8EAAC0716FFC2B0D5 /* ActivitiesDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitiesDetailView.swift; sourceTree = "<group>"; };
 		FDB8314607A93925C2345492 /* HealthDataPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataPoint.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -173,6 +175,7 @@
 				B54E34C71EFFBAFE01339105 /* HeartRateZonesView.swift */,
 				5C79C6C8AEE32BC7BA9E6297 /* InsightCardView.swift */,
 				F1DBF6F8EAAC0716FFC2B0D4 /* LoadDetailView.swift */,
+				77DBF6F8EAAC0716FFC2B0D5 /* ActivitiesDetailView.swift */,
 				A1D712035DFF9C0CD39DB889 /* MainTabView.swift */,
 				D110C0447F1823CB820841A7 /* MetricCardView.swift */,
 				496197B5FE6FC2BCBCFBA2C3 /* OptimalLoadBarView.swift */,
@@ -265,6 +268,7 @@
 				66E69104497C37877C0A7447 /* HeartRateZonesView.swift in Sources */,
 				1BF25C4F56C1008B0FAD4A26 /* InsightCardView.swift in Sources */,
 				BB851CD6406C9D107011DF4E /* LoadDetailView.swift in Sources */,
+				77E71CD6406C9D107011DF4F /* ActivitiesDetailView.swift in Sources */,
 				337738637EB68A49BF9A0872 /* MainTabView.swift in Sources */,
 				F04031B14C32F5EAE32C4818 /* MetricCardView.swift in Sources */,
 				E5AD6C23006B5A54D17F6B32 /* OptimalLoadBarView.swift in Sources */,

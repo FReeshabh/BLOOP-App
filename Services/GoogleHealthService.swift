@@ -31,13 +31,36 @@ class GoogleHealthService: HealthDataProvider {
             throw GoogleHealthError.authenticationRequired
         }
 
-        let url = URL(string: "\(baseURL)/\(dataType.rawValue)/dataPoints")!
+        var url = URL(string: "\(baseURL)/\(dataType.rawValue)/dataPoints")!
         let filter = filterString(for: dataType, from: startDate, to: endDate)
         
-        let rawPoints = try await fetchAllPages(for: url, token: token, filter: filter)
+        var rawPoints = try await fetchAllPages(for: url, token: token, filter: filter)
+
+        // Fallback for HRV: if daily-heart-rate-variability returns nothing, try heart-rate-variability
+        if dataType == .dailyHeartRateVariability && rawPoints.isEmpty {
+            print("⚠️ daily-heart-rate-variability returned 0 points. Trying fallback to heart-rate-variability...")
+            let fallbackRaw = "heart-rate-variability"
+            if let fallbackURL = URL(string: "\(baseURL)/\(fallbackRaw)/dataPoints") {
+                let isoFormatter = ISO8601DateFormatter()
+                isoFormatter.formatOptions = [.withInternetDateTime]
+                let startDateStr = isoFormatter.string(from: startDate)
+                let endDateStr = isoFormatter.string(from: endDate)
+                let fallbackFilter = "heart_rate_variability.sample_time.physical_time >= \"\(startDateStr)\" AND heart_rate_variability.sample_time.physical_time < \"\(endDateStr)\""
+                
+                do {
+                    let fallbackPoints = try await fetchAllPages(for: fallbackURL, token: token, filter: fallbackFilter)
+                    if !fallbackPoints.isEmpty {
+                        rawPoints = fallbackPoints
+                        print("✅ Found \(rawPoints.count) raw points from heart-rate-variability")
+                    }
+                } catch {
+                    print("⚠️ Fallback to heart-rate-variability failed: \(error.localizedDescription)")
+                }
+            }
+        }
 
         // --- VERBOSE LOGGING ---
-        let ignoreList: [HealthDataType] = [.dailyRestingHeartRate, .respiratoryRate, .dailyHeartRateVariability]
+        let ignoreList: [HealthDataType] = [.dailyRestingHeartRate, .respiratoryRate]
         if !ignoreList.contains(dataType) {
             print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             print("📡 [GoogleHealthService] \(dataType.rawValue)")
@@ -181,6 +204,52 @@ class GoogleHealthService: HealthDataProvider {
             .filter { Self.sleepSession($0, overlapsStart: startDate, end: endDate) }
     }
 
+    func fetchExerciseSessions(from startDate: Date, to endDate: Date) async throws -> [ActivitySession] {
+        print("📡 Fetching exercise sessions...")
+        guard let token = try await authManager.getAccessToken() else {
+            throw GoogleHealthError.authenticationRequired
+        }
+        
+        let url = URL(string: "\(baseURL)/exercise/dataPoints")!
+        let filter = filterString(for: .exercise, from: startDate, to: endDate)
+        let rawPoints = try await fetchAllPages(for: url, token: token, filter: filter)
+        
+        var activities: [ActivitySession] = []
+        for raw in rawPoints {
+            guard let exerciseNode = raw["exercise"] as? [String: Any],
+                  let interval = exerciseNode["interval"] as? [String: Any],
+                  let name = exerciseNode["exerciseType"] as? String else { continue }
+            
+            let start = parseIntervalDate(from: interval) ?? Date()
+            
+            var duration: TimeInterval = 0
+            if let endStr = interval["endTime"] as? String, let end = parseISO8601(endStr) {
+                duration = end.timeIntervalSince(start)
+            } else if let endStr = interval["physicalEndTime"] as? String, let end = parseISO8601(endStr) {
+                duration = end.timeIntervalSince(start)
+            }
+            
+            let calories = doubleFromStringOrNumber(exerciseNode["caloriesBurned"]) ?? 0
+            let avgHR = doubleFromStringOrNumber(exerciseNode["averageHeartRate"]) ?? 0
+            let maxHR = doubleFromStringOrNumber(exerciseNode["maxHeartRate"]) ?? 0
+            
+            // Generate arbitrary activity strain for visual purposes or real computation later
+            let strain = (duration / 60) * 0.2 + (avgHR > 100 ? (avgHR - 100) * 0.1 : 0)
+            
+            activities.append(ActivitySession(
+                name: name.capitalized.replacingOccurrences(of: "_", with: " "),
+                startTime: start,
+                duration: duration,
+                activityStrain: min(21.0, strain),
+                caloriesBurned: calories,
+                averageHR: avgHR,
+                maxHR: maxHR
+            ))
+        }
+        
+        return activities.sorted { $0.startTime > $1.startTime }
+    }
+
     func fetchSleepDataPoints(from startDate: Date, to endDate: Date) async throws -> [HealthDataPoint] {
         print("📡 Fetching sleep data points for trends...")
         let rawPoints = try await fetchRawSleepPoints(from: startDate, to: endDate)
@@ -281,25 +350,30 @@ class GoogleHealthService: HealthDataProvider {
     private func filterString(for dataType: HealthDataType, from startDate: Date, to endDate: Date) -> String? {
         let snakeCaseName = dataType.rawValue.replacingOccurrences(of: "-", with: "_")
         
-        if dataType.rawValue.hasPrefix("daily-") {
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy-MM-dd"
-            let startDateStr = dateFormatter.string(from: startDate)
-            let endDateStr = dateFormatter.string(from: endDate)
-            return "\(snakeCaseName).date >= \"\(startDateStr)\" AND \(snakeCaseName).date < \"\(endDateStr)\""
-        } else if dataType == .heartRate ||
-                    dataType == .dailyHeartRateVariability ||
-                    dataType == .weight ||
-                    dataType == .bodyFat ||
-                    dataType == .vo2Max ||
-                    dataType == .coreBodyTemperature ||
-                    dataType == .skinTemperature ||
-                    dataType == .bloodPressure {
+        if dataType == .heartRate ||
+           dataType == .weight ||
+           dataType == .bodyFat ||
+           dataType == .vo2Max ||
+           dataType == .coreBodyTemperature ||
+           dataType == .skinTemperature ||
+           dataType == .bloodPressure {
             let isoFormatter = ISO8601DateFormatter()
             isoFormatter.formatOptions = [.withInternetDateTime]
             let startDateStr = isoFormatter.string(from: startDate)
             let endDateStr = isoFormatter.string(from: endDate)
             return "\(snakeCaseName).sample_time.physical_time >= \"\(startDateStr)\" AND \(snakeCaseName).sample_time.physical_time < \"\(endDateStr)\""
+        } else if dataType.rawValue.hasPrefix("daily-") {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            let startDateStr = dateFormatter.string(from: startDate)
+            let endDateStr = dateFormatter.string(from: endDate)
+            return "\(snakeCaseName).date >= \"\(startDateStr)\" AND \(snakeCaseName).date < \"\(endDateStr)\""
+        } else if dataType == .exercise {
+            let isoFormatter = ISO8601DateFormatter()
+            isoFormatter.formatOptions = [.withInternetDateTime]
+            let startDateStr = isoFormatter.string(from: startDate)
+            let endDateStr = isoFormatter.string(from: endDate)
+            return "exercise.interval.end_time >= \"\(startDateStr)\" AND exercise.interval.end_time < \"\(endDateStr)\""
         } else {
             let isoFormatter = ISO8601DateFormatter()
             isoFormatter.formatOptions = [.withInternetDateTime]
@@ -415,9 +489,12 @@ class GoogleHealthService: HealthDataProvider {
             guard let hrv = (point["dailyHeartRateVariability"] as? [String: Any])
                     ?? (point["heartRateVariability"] as? [String: Any]) else { return nil }
             // Prefer RMSSD; fall back to SDNN if zero or missing
+            let avgHrv = doubleFromStringOrNumber(hrv["averageHeartRateVariabilityMilliseconds"])
             let rmssd = doubleFromStringOrNumber(hrv["rootMeanSquareOfSuccessiveDifferencesMilliseconds"])
             let sdnn  = doubleFromStringOrNumber(hrv["standardDeviationMilliseconds"])
-            guard let v = (rmssd.flatMap { $0 > 0 ? $0 : nil }) ?? sdnn, v > 0 else { return nil }
+            let deepSleepRmssd = doubleFromStringOrNumber(hrv["deepSleepRootMeanSquareOfSuccessiveDifferencesMilliseconds"])
+            
+            guard let v = avgHrv ?? rmssd ?? sdnn ?? deepSleepRmssd, v > 0 else { return nil }
             guard let date = parseSimpleDate(hrv["date"] as? [String: Any])
                     ?? parseSampleTimeDate(hrv["sampleTime"] as? [String: Any]) else { return nil }
             return (v, date)

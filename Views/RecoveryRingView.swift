@@ -45,8 +45,8 @@ struct RecoveryRingView: View {
                     .foregroundColor(.white)
                     .contentTransition(.numericText())
                 
-                Text("RECOVERY")
-                    .font(.system(size: 11, weight: .semibold))
+                Text("RESILIENCE (EST.)")
+                    .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(.gray)
                     .tracking(2)
                 

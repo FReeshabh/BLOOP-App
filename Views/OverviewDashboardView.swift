@@ -10,6 +10,7 @@ struct OverviewDashboardView: View {
     @State private var showSleepDetail = false
     @State private var showLoadDetail = false
     @State private var showHeartRateDetail = false
+    @State private var showActivitiesDetail = false
 
     var body: some View {
         ZStack {
@@ -61,6 +62,11 @@ struct OverviewDashboardView: View {
                 restingHeartRate: viewModel.restingHeartRate
             )
         }
+        .sheet(isPresented: $showActivitiesDetail) {
+            if let activities = viewModel.strainData?.activities {
+                ActivitiesDetailView(activities: activities)
+            }
+        }
         .sheet(isPresented: $viewModel.showHistoricalSyncPrompt) {
             historicalSyncPrompt
         }
@@ -90,15 +96,23 @@ struct OverviewDashboardView: View {
             Spacer()
 
             HStack(spacing: 6) {
-                Image(systemName: "calendar")
-                    .font(.system(size: 12))
-                    .foregroundColor(.gray)
-                Text("Today")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.white)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 10))
-                    .foregroundColor(.gray)
+                DatePicker(
+                    "",
+                    selection: Binding(
+                        get: { viewModel.selectedDate },
+                        set: { newDate in
+                            viewModel.selectedDate = newDate
+                            Task {
+                                await viewModel.loadData(modelContext: modelContext)
+                            }
+                        }
+                    ),
+                    in: ...Date(),
+                    displayedComponents: .date
+                )
+                .labelsHidden()
+                .colorInvert()
+                .colorMultiply(.white)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
@@ -155,42 +169,51 @@ struct OverviewDashboardView: View {
             GridItem(.flexible(), spacing: 10)
         ], spacing: 10) {
             // Heart Rate - primary is resting, secondary is current
-            Button(action: {
-                if !viewModel.todayHeartRateData.isEmpty {
+            if !viewModel.todayHeartRateData.isEmpty {
+                Button(action: {
                     showHeartRateDetail = true
+                }) {
+                    OverviewMetricCardView(
+                        icon: "heart.fill",
+                        iconColor: Color(hex: "FF6B6B"),
+                        title: "Heart rate",
+                        value: viewModel.restingHeartRate.map { String(format: "%.0f", $0) } ?? "--",
+                        unit: viewModel.restingHeartRate != nil ? "bpm" : "",
+                        subtitle: viewModel.currentHeartRate.map { "Current \($0) bpm" } ?? "No data",
+                        isLive: true
+                    )
                 }
-            }) {
-                OverviewMetricCardView(
-                    icon: "heart.fill",
-                    iconColor: Color(hex: "FF6B6B"),
-                    title: "Heart rate",
-                    value: viewModel.restingHeartRate.map { String(format: "%.0f", $0) } ?? "--",
-                    unit: viewModel.restingHeartRate != nil ? "bpm" : "",
-                    subtitle: viewModel.currentHeartRate.map { "Current \($0) bpm" } ?? "No data today",
-                    isLive: true
-                )
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
 
             // Steps
-            OverviewMetricCardView(
-                icon: "figure.walk",
-                iconColor: Color(hex: "5B86E5"),
-                title: "Steps",
-                value: formatSteps(viewModel.todaySteps),
-                subtitle: stepsSubtitle
-            )
+            if viewModel.todaySteps > 0 {
+                OverviewMetricCardView(
+                    icon: "figure.walk",
+                    iconColor: Color(hex: "5B86E5"),
+                    title: "Steps",
+                    value: formatSteps(viewModel.todaySteps),
+                    subtitle: stepsSubtitle
+                )
+            }
 
             // Zone Minutes
-            OverviewMetricCardView(
-                icon: "heart.circle.fill",
-                iconColor: Color(hex: "FFC700"),
-                title: "Zone minutes",
-                value: String(format: "%.0f", viewModel.activeZoneMinutes),
-                unit: "min",
-                subtitle: viewModel.activeZoneMinutes > 0 ? "Above average" : "Goal 30",
-                showChevron: false
-            )
+            if viewModel.activeZoneMinutes > 0 {
+                Button(action: {
+                    showActivitiesDetail = true
+                }) {
+                    OverviewMetricCardView(
+                        icon: "heart.circle.fill",
+                        iconColor: Color(hex: "FFC700"),
+                        title: "Zone minutes",
+                        value: String(format: "%.0f", viewModel.activeZoneMinutes),
+                        unit: "min",
+                        subtitle: "Above average",
+                        showChevron: false
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
 
             // Optimal Load
             OverviewMetricCardView(
@@ -204,7 +227,9 @@ struct OverviewDashboardView: View {
             )
 
             // Stress gauge
-            StressGaugeCardView(stressLevel: viewModel.estimatedStress)
+            if viewModel.strainData != nil && viewModel.recoveryScore != nil {
+                StressGaugeCardView(stressLevel: viewModel.estimatedStress)
+            }
         }
     }
 
