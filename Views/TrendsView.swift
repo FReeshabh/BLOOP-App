@@ -235,29 +235,37 @@ struct TrendsView: View {
                 }()
                 let range = max(maxVal - minVal, 1)
 
+                // Generate nicer gridlines (round to significant digits)
+                let magnitude = pow(10, floor(log10(range)))
+                let stepY = (range / 2) > 0 ? (ceil((range / 2) / (magnitude / 2)) * (magnitude / 2)) : 1
+                let niceMin = scaleMode == .zeroBased ? 0 : floor(minVal / stepY) * stepY
+                let niceMax = max(niceMin + stepY * 2, ceil(maxVal / stepY) * stepY)
+                let niceRange = max(niceMax - niceMin, 1)
+
                 let count = viewModel.periodAverages.count
                 let stepX = count > 1 ? geometry.size.width / CGFloat(count) : geometry.size.width
                 
                 // Gridlines (3 lines: top, middle, bottom)
-                let gridlines = [maxVal, minVal + (range / 2), minVal]
+                let gridlines = [niceMax, niceMin + stepY, niceMin]
                 
                 ZStack {
                     // Background gridlines and labels
                     ForEach(0..<gridlines.count, id: \.self) { i in
                         let val = gridlines[i]
-                        let h = geometry.size.height * 0.7 * CGFloat((val - minVal) / range)
+                        let h = geometry.size.height * 0.7 * CGFloat((val - niceMin) / niceRange)
                         let y = geometry.size.height - 35 - h
                         
                         Path { path in
                             path.move(to: CGPoint(x: 0, y: y))
-                            path.addLine(to: CGPoint(x: geometry.size.width - 30, y: y))
+                            path.addLine(to: CGPoint(x: geometry.size.width - 40, y: y))
                         }
                         .stroke(Color.white.opacity(0.05), lineWidth: 1)
                         
                         Text(viewModel.formatValue(val))
                             .font(.system(size: 9, weight: .medium))
                             .foregroundColor(.gray.opacity(0.6))
-                            .position(x: geometry.size.width - 10, y: y)
+                            .frame(width: 40, alignment: .trailing)
+                            .position(x: geometry.size.width - 20, y: y)
                     }
 
                     // Connecting Line
@@ -267,7 +275,7 @@ struct TrendsView: View {
                             let item = viewModel.periodAverages[i]
                             if let avg = item.average {
                                 let x = stepX * CGFloat(i) + stepX / 2.0
-                                let h = geometry.size.height * 0.7 * CGFloat((avg - minVal) / range)
+                                let h = geometry.size.height * 0.7 * CGFloat((avg - niceMin) / niceRange)
                                 let y = geometry.size.height - 35 - h
                                 
                                 if firstPoint {
@@ -290,7 +298,7 @@ struct TrendsView: View {
                         let isMostRecent = i == count - 1
                         
                         if let avg = item.average {
-                            let h = geometry.size.height * 0.7 * CGFloat((avg - minVal) / range)
+                            let h = geometry.size.height * 0.7 * CGFloat((avg - niceMin) / niceRange)
                             let y = geometry.size.height - 35 - h
                             
                             // Point Marker

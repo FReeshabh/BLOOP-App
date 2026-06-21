@@ -11,6 +11,7 @@ struct OverviewDashboardView: View {
     @State private var showLoadDetail = false
     @State private var showHeartRateDetail = false
     @State private var showActivitiesDetail = false
+    @State private var showStressDetail = false
 
     var body: some View {
         ZStack {
@@ -76,6 +77,15 @@ struct OverviewDashboardView: View {
         .sheet(isPresented: $showActivitiesDetail) {
             if let activities = viewModel.strainData?.activities {
                 ActivitiesDetailView(activities: activities)
+            }
+        }
+        .sheet(isPresented: $showStressDetail) {
+            if let strain = viewModel.strainData, let recovery = viewModel.recoveryScore {
+                StressDetailView(
+                    stressLevel: viewModel.estimatedStress,
+                    strain: strain,
+                    recovery: recovery
+                )
             }
         }
         .sheet(isPresented: $viewModel.showHistoricalSyncPrompt) {
@@ -227,19 +237,29 @@ struct OverviewDashboardView: View {
             }
 
             // Optimal Load
-            OverviewMetricCardView(
-                icon: "bolt.horizontal.fill",
-                iconColor: Color(hex: "5B86E5"),
-                title: "Optimal load",
-                value: String(format: "%.0f", viewModel.currentLoadPosition),
-                unit: "",
-                subtitle: "Range \(Int(viewModel.optimalLoadRange.lowerBound))-\(Int(viewModel.optimalLoadRange.upperBound))",
-                showChevron: false
-            )
+            Button(action: {
+                showLoadDetail = true
+            }) {
+                OverviewMetricCardView(
+                    icon: "bolt.horizontal.fill",
+                    iconColor: Color(hex: "5B86E5"),
+                    title: "Optimal load",
+                    value: String(format: "%.0f", viewModel.currentLoadPosition),
+                    unit: "",
+                    subtitle: "Range \(Int(viewModel.optimalLoadRange.lowerBound))-\(Int(viewModel.optimalLoadRange.upperBound))",
+                    showChevron: true
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
 
             // Stress gauge
             if viewModel.strainData != nil && viewModel.recoveryScore != nil {
-                StressGaugeCardView(stressLevel: viewModel.estimatedStress)
+                Button(action: {
+                    showStressDetail = true
+                }) {
+                    StressGaugeCardView(stressLevel: viewModel.estimatedStress)
+                }
+                .buttonStyle(PlainButtonStyle())
             }
         }
     }

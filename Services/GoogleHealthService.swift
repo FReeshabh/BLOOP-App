@@ -534,13 +534,19 @@ class GoogleHealthService: HealthDataProvider {
 
         case .activeZoneMinutes:
             // Structure: { "activeZoneMinutes": { "interval": { "civilStartTime": { "date": {...} } }, "fatBurnActiveZoneMinutes": 5, "cardioActiveZoneMinutes": 10, "peakActiveZoneMinutes": 2 } }
-            guard let node = point["activeZoneMinutes"] as? [String: Any],
-                  let date = parseIntervalDate(from: node["interval"] as? [String: Any]) else { return nil }
+            guard let node = point["activeZoneMinutes"] as? [String: Any] else { return nil }
+            
+            let date = parseIntervalDate(from: node["interval"] as? [String: Any])
+                ?? parseIntervalDate(from: point["interval"] as? [String: Any])
+                ?? parseCivilDateFromAnyInterval(in: point)
+                
+            guard let validDate = date else { return nil }
+            
             let fat     = doubleFromStringOrNumber(node["fatBurnActiveZoneMinutes"]) ?? 0
             let cardio  = doubleFromStringOrNumber(node["cardioActiveZoneMinutes"]) ?? 0
             let peak    = doubleFromStringOrNumber(node["peakActiveZoneMinutes"]) ?? 0
             let total   = fat + cardio + peak
-            return (total, date)
+            return (total, validDate)
 
         default:
             // Generic fallback for unmapped types: scan nested dicts for fpVal/intVal (legacy Google Fit format).
@@ -562,10 +568,7 @@ class GoogleHealthService: HealthDataProvider {
 
     /// Extracts the best available start date from a Google Health interval.
     private func parseIntervalDate(from interval: [String: Any]?) -> Date? {
-        if let civilDate = parseCivilDate(from: interval) {
-            return civilDate
-        }
-
+        // Prioritize exact start time to prevent intra-day point collapsing
         if let startTimeStr = interval?["startTime"] as? String,
            let date = parseISO8601(startTimeStr) {
             return date
@@ -574,6 +577,10 @@ class GoogleHealthService: HealthDataProvider {
         if let startTimeStr = interval?["physicalStartTime"] as? String,
            let date = parseISO8601(startTimeStr) {
             return date
+        }
+        
+        if let civilDate = parseCivilDate(from: interval) {
+            return civilDate
         }
 
         return nil
@@ -623,13 +630,15 @@ class GoogleHealthService: HealthDataProvider {
     }
 
     private func parseSampleTimeDate(_ sampleTime: [String: Any]?) -> Date? {
+        // Prioritize exact physical time to prevent intra-day point collapsing
+        if let physicalTimeStr = sampleTime?["physicalTime"] as? String,
+           let physicalDate = parseISO8601(physicalTimeStr) {
+            return physicalDate
+        }
         if let civilTime = sampleTime?["civilTime"] as? [String: Any],
            let dateDict  = civilTime["date"] as? [String: Any],
            let date = parseSimpleDate(dateDict) {
             return date
-        }
-        if let physicalTimeStr = sampleTime?["physicalTime"] as? String {
-            return parseISO8601(physicalTimeStr)
         }
         return nil
     }
