@@ -1,5 +1,24 @@
 import Foundation
 
+struct SleepScoreBreakdown: Codable, Equatable {
+    let totalSleep: Int
+    let efficiency: Int
+    let deepSleep: Int
+    let remSleep: Int
+    let latency: Int
+    let timing: Int
+    
+    var compositeScore: Int {
+        let weighted = Double(totalSleep) * 0.25 +
+                       Double(efficiency) * 0.20 +
+                       Double(deepSleep) * 0.15 +
+                       Double(remSleep) * 0.15 +
+                       Double(latency) * 0.10 +
+                       Double(timing) * 0.15
+        return Int(min(100.0, max(0.0, round(weighted))))
+    }
+}
+
 /// Represents a single sleep session with stage breakdown.
 struct SleepData: Identifiable, Codable {
     var id: UUID = UUID()
@@ -27,11 +46,15 @@ struct SleepData: Identifiable, Codable {
     // Targets & scoring
     let sleepNeed: TimeInterval        // personalized target in seconds (default 8h)
     var computedScore: Int?            // Calculated externally via SleepScoreEngine
+    var scoreBreakdown: SleepScoreBreakdown?
     
     /// Note: Google Health / Health Connect does not provide a native sleep score.
     /// This score is always app-computed using the SleepScoreEngine, based on efficiency,
     /// duration, stage balance, and onset.
     var sleepPerformance: Int {
+        if let breakdown = scoreBreakdown {
+            return breakdown.compositeScore
+        }
         return computedScore ?? 0
     }
     

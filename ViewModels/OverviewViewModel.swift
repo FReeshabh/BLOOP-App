@@ -216,7 +216,9 @@ final class OverviewViewModel: ObservableObject {
             if sleepResult != nil {
                 // If HRV data is available for today, pass it to the sleep data for score calculation
                 sleepResult!.deepSleepRMSSD = currentHRV
-                sleepResult!.computedScore = SleepScoreEngine.calculateScore(for: sleepResult!)
+                let breakdown = SleepScoreEngine.calculateScoreBreakdown(for: sleepResult!)
+                sleepResult!.scoreBreakdown = breakdown
+                sleepResult!.computedScore = breakdown.compositeScore
             }
             self.sleepData = sleepResult
             self.todayNaps = allSleeps.filter { $0.totalTimeAsleep < 10800 }

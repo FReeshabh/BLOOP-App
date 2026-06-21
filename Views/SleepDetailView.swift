@@ -40,7 +40,7 @@ struct SleepDetailView: View {
                                 .padding(.horizontal)
 
                             // Sleep Metrics
-                            sleepMetricsCard(sleep: sleep)
+                            sleepScoreBreakdownCard(sleep: sleep)
                                 .padding(.horizontal)
 
                             // Naps section
@@ -330,57 +330,67 @@ struct SleepDetailView: View {
         }
     }
 
-    // MARK: - Sleep Metrics
+    // MARK: - Sleep Score Breakdown
 
-    private func sleepMetricsCard(sleep: SleepData) -> some View {
-        VStack(spacing: 0) {
-            let goalDuration = sleep.sleepNeed > 0 ? sleep.sleepNeed : (8 * 3600)
-            let durationTitle = SleepData.formatDuration(sleep.totalTimeAsleep)
-            let goalTitle = SleepData.formatDuration(goalDuration)
-            let progress = min(1.0, max(0.0, sleep.totalTimeAsleep / goalDuration))
-            
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 12) {
-                    Image(systemName: "clock.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(.gray)
-                        .frame(width: 20)
-
-                    Text("Hours vs Goal")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white.opacity(0.8))
-
-                    Spacer()
-                    
-                    Text("\(durationTitle) of \(goalTitle)")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                }
-                
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.white.opacity(0.06))
-                            .frame(height: 8)
-                        
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(progress >= 1.0 ? Color(hex: "00E08F") : Color(hex: "5B86E5"))
-                            .frame(width: geometry.size.width * CGFloat(progress), height: 8)
-                    }
-                }
-                .frame(height: 8)
+    private func sleepScoreBreakdownCard(sleep: SleepData) -> some View {
+        // Fallback to on-the-fly calculation if not available in the model
+        let breakdown = sleep.scoreBreakdown ?? SleepScoreEngine.calculateScoreBreakdown(for: sleep)
+        
+        return VStack(spacing: 16) {
+            HStack {
+                Text("SCORE BREAKDOWN")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.gray)
+                    .tracking(1.5)
+                Spacer()
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
+            
+            VStack(spacing: 16) {
+                breakdownRow(title: "Total Sleep", score: breakdown.totalSleep, icon: "bed.double.fill", goodThreshold: 85)
+                breakdownRow(title: "Efficiency", score: breakdown.efficiency, icon: "bolt.heart.fill", goodThreshold: 85)
+                breakdownRow(title: "Deep Sleep", score: breakdown.deepSleep, icon: "moon.fill", goodThreshold: 85)
+                breakdownRow(title: "REM Sleep", score: breakdown.remSleep, icon: "moon.zzz.fill", goodThreshold: 85)
+                breakdownRow(title: "Latency", score: breakdown.latency, icon: "timer", goodThreshold: 85)
+                breakdownRow(title: "Timing", score: breakdown.timing, icon: "clock.fill", goodThreshold: 85)
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white.opacity(0.05))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+            )
         }
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
-        )
+    }
+
+    private func breakdownRow(title: String, score: Int, icon: String, goodThreshold: Int) -> some View {
+        let isGood = score >= goodThreshold
+        let color = isGood ? Color(hex: "00E08F") : Color(hex: "FFC700")
+        
+        return HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundColor(.gray)
+                .frame(width: 20)
+                
+            Text(title)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.white.opacity(0.8))
+                
+            Spacer()
+            
+            HStack(spacing: 6) {
+                Text("\(score)")
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundColor(color)
+                
+                Circle()
+                    .fill(color)
+                    .frame(width: 6, height: 6)
+            }
+        }
     }
 
     // MARK: - Naps
