@@ -4,6 +4,7 @@ import SwiftUI
 struct LoadDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let strain: StrainData
+    @State private var showStrainInfo = false
 
     var body: some View {
         NavigationView {
@@ -72,6 +73,13 @@ struct LoadDetailView: View {
                 }
             }
             .navigationBarHidden(true)
+            .alert(isPresented: $showStrainInfo) {
+                Alert(
+                    title: Text("Strain Calculation"),
+                    message: Text("Day Strain is calculated using a logarithmic scale from 0 to 21 based on your total cardiovascular load. It heavily weights elevated heart rates (Active Zone Minutes) and lightly factors in daily steps."),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
         }
         .preferredColorScheme(.dark)
     }
@@ -103,9 +111,16 @@ struct LoadDetailView: View {
 
             Spacer()
 
-            Text("Day Strain")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.gray)
+            HStack(spacing: 4) {
+                Text("Day Strain")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.gray)
+                Button(action: { showStrainInfo = true }) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                }
+            }
         }
         .padding(.horizontal)
         .padding(.top, 8)

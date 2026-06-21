@@ -20,14 +20,17 @@
 		382B67A7A4613DDABEE6126E /* SleepStagesBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70B105609544F21A537A4BA /* SleepStagesBarView.swift */; };
 		49D407EBF573D89C764C029A /* StrainGaugeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B52813015B78D17FCC03D2 /* StrainGaugeView.swift */; };
 		5309CFE6A09BF4B262A4519A /* BLOOPApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02A578C89635F1DA0E655925 /* BLOOPApp.swift */; };
+		5701FD8A9CF3836E1BBE8D28 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAFF2755C13D938E229D3FF1 /* AppEnvironment.swift */; };
 		59DECE94C0903C6C167783DA /* HealthDataPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDB8314607A93925C2345492 /* HealthDataPoint.swift */; };
 		5E66F551D31D5AFC0F426F84 /* GoogleHealthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 347DD892AE2A01CB7FB66A86 /* GoogleHealthService.swift */; };
 		642B19CEAEB2CA3EC4732700 /* SleepData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 252995CC26343922C573568E /* SleepData.swift */; };
+		665A3FF488FB72A6377D09E3 /* ActivitiesLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E8C4B9A7852CD0D1DCFEFD1 /* ActivitiesLogView.swift */; };
 		66E69104497C37877C0A7447 /* HeartRateZonesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B54E34C71EFFBAFE01339105 /* HeartRateZonesView.swift */; };
 		6ABF7D20D884E54F63F3ABAE /* ActivitiesDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C759009F69D3E7F8A67F3D09 /* ActivitiesDetailView.swift */; };
 		6D4548E8F77204F57D3B17F8 /* RecoveryContributorsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EAFB894C18AFF9642E1758A /* RecoveryContributorsView.swift */; };
 		727A1D7A95EA46F583408596 /* StressDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EE18E1601A19F6C22550DFF /* StressDetailView.swift */; };
 		730944BE84D7B59FD4F6684A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDC5B4AC1F4BBF475D847A21 /* SettingsView.swift */; };
+		76DDED1EBA979421A11C4403 /* HealthKitSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29FFF051A6AA7A13AF5D9CC0 /* HealthKitSyncService.swift */; };
 		876105455090490B5A1BBBF4 /* RecoveryScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5085DD227AF9598C96CC17 /* RecoveryScore.swift */; };
 		98F9782BED6604DCD9BE3FA2 /* OverviewMetricCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 255241A1D0954DA67310D772 /* OverviewMetricCardView.swift */; };
 		AED922D30438FACC69CE098F /* UserBaselineEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C95A1F06F7ACA516AC96D44C /* UserBaselineEntity.swift */; };
@@ -51,10 +54,12 @@
 /* Begin PBXFileReference section */
 		02A578C89635F1DA0E655925 /* BLOOPApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLOOPApp.swift; sourceTree = "<group>"; };
 		04D2DDAB87B2613BD0025F2D /* OverviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewViewModel.swift; sourceTree = "<group>"; };
+		0E8C4B9A7852CD0D1DCFEFD1 /* ActivitiesLogView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ActivitiesLogView.swift; path = Views/ActivitiesLogView.swift; sourceTree = "<group>"; };
 		0EBF4C5F134CAEBDE43AE4C7 /* BLOOP.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BLOOP.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		12481BB4915EBAF8043BA12E /* StrainData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrainData.swift; sourceTree = "<group>"; };
 		252995CC26343922C573568E /* SleepData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepData.swift; sourceTree = "<group>"; };
 		255241A1D0954DA67310D772 /* OverviewMetricCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewMetricCardView.swift; sourceTree = "<group>"; };
+		29FFF051A6AA7A13AF5D9CC0 /* HealthKitSyncService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HealthKitSyncService.swift; path = Services/HealthKitSyncService.swift; sourceTree = "<group>"; };
 		347DD892AE2A01CB7FB66A86 /* GoogleHealthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleHealthService.swift; sourceTree = "<group>"; };
 		4278E0FEC9678BE0C29659DB /* ReadinessDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadinessDetailView.swift; sourceTree = "<group>"; };
 		479FD8650A62FFFCE2922C0F /* RecoveryRingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryRingView.swift; sourceTree = "<group>"; };
@@ -73,6 +78,7 @@
 		A1D712035DFF9C0CD39DB889 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		A70B105609544F21A537A4BA /* SleepStagesBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepStagesBarView.swift; sourceTree = "<group>"; };
 		AAD3399A987DC99958617D73 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
+		AAFF2755C13D938E229D3FF1 /* AppEnvironment.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AppEnvironment.swift; path = App/AppEnvironment.swift; sourceTree = "<group>"; };
 		AF5085DD227AF9598C96CC17 /* RecoveryScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryScore.swift; sourceTree = "<group>"; };
 		B54E34C71EFFBAFE01339105 /* HeartRateZonesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateZonesView.swift; sourceTree = "<group>"; };
 		B6B8DB1F4476E20E5D3C7CA1 /* HealthDataPointEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataPointEntity.swift; sourceTree = "<group>"; };
@@ -111,6 +117,14 @@
 			path = ViewModels;
 			sourceTree = "<group>";
 		};
+		2C3FC0E757C0632E59A1D1B0 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				AAFF2755C13D938E229D3FF1 /* AppEnvironment.swift */,
+			);
+			name = App;
+			sourceTree = "<group>";
+		};
 		2CB5957009D0FB6AC6E2B22C /* Persistence */ = {
 			isa = PBXGroup;
 			children = (
@@ -131,6 +145,7 @@
 				1A3F1B62D65018C0B6BB8613 /* ViewModels */,
 				FBDF3F8501EF2F52F8F9B07F /* Views */,
 				B11E56188DAAD2B9355416F0 /* Products */,
+				B76A6B9D662BC91301640448 /* BLOOP */,
 			);
 			sourceTree = "<group>";
 		};
@@ -160,6 +175,14 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
+		6AF007CFCDF8F33068E4C745 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				29FFF051A6AA7A13AF5D9CC0 /* HealthKitSyncService.swift */,
+			);
+			name = Services;
+			sourceTree = "<group>";
+		};
 		B11E56188DAAD2B9355416F0 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -168,12 +191,30 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		B76A6B9D662BC91301640448 /* BLOOP */ = {
+			isa = PBXGroup;
+			children = (
+				2C3FC0E757C0632E59A1D1B0 /* App */,
+				6AF007CFCDF8F33068E4C745 /* Services */,
+				ED1C3178586AE10355CE9D38 /* Views */,
+			);
+			name = BLOOP;
+			sourceTree = "<group>";
+		};
 		DFFA71655F53CE787E2A07AD /* App */ = {
 			isa = PBXGroup;
 			children = (
 				02A578C89635F1DA0E655925 /* BLOOPApp.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		ED1C3178586AE10355CE9D38 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				0E8C4B9A7852CD0D1DCFEFD1 /* ActivitiesLogView.swift */,
+			);
+			name = Views;
 			sourceTree = "<group>";
 		};
 		FBDF3F8501EF2F52F8F9B07F /* Views */ = {
@@ -304,6 +345,9 @@
 				D3E67CA86E2DE663156CEDC8 /* TrendsView.swift in Sources */,
 				FA4CD4B5847173284FBAC985 /* TrendsViewModel.swift in Sources */,
 				AED922D30438FACC69CE098F /* UserBaselineEntity.swift in Sources */,
+				5701FD8A9CF3836E1BBE8D28 /* AppEnvironment.swift in Sources */,
+				76DDED1EBA979421A11C4403 /* HealthKitSyncService.swift in Sources */,
+				665A3FF488FB72A6377D09E3 /* ActivitiesLogView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

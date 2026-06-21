@@ -5,17 +5,26 @@ struct SleepScoreBreakdown: Codable, Equatable {
     let efficiency: Int
     let deepSleep: Int
     let remSleep: Int
-    let latency: Int
+    let latency: Int?
     let timing: Int
     
     var compositeScore: Int {
-        let weighted = Double(totalSleep) * 0.25 +
-                       Double(efficiency) * 0.20 +
-                       Double(deepSleep) * 0.15 +
-                       Double(remSleep) * 0.15 +
-                       Double(latency) * 0.10 +
-                       Double(timing) * 0.15
-        return Int(min(100.0, max(0.0, round(weighted))))
+        if let latencyScore = latency {
+            let weighted = Double(totalSleep) * 0.25 +
+                           Double(efficiency) * 0.20 +
+                           Double(deepSleep) * 0.15 +
+                           Double(remSleep) * 0.15 +
+                           Double(latencyScore) * 0.10 +
+                           Double(timing) * 0.15
+            return Int(min(100.0, max(0.0, round(weighted))))
+        } else {
+            let weighted = Double(totalSleep) * 0.25 +
+                           Double(efficiency) * 0.20 +
+                           Double(deepSleep) * 0.15 +
+                           Double(remSleep) * 0.15 +
+                           Double(timing) * 0.15
+            return Int(min(100.0, max(0.0, round(weighted / 0.90))))
+        }
     }
 }
 

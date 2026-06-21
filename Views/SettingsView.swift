@@ -17,7 +17,7 @@ struct SettingsView: View {
     @AppStorage("lastAppleHealthSync") private var lastAppleHealthSync: Double = 0
     @State private var isPermissionRevoked = false
     @State private var isSyncingAppleHealth = false
-    @StateObject private var viewModel = OverviewViewModel()
+    @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         ZStack {
@@ -340,6 +340,13 @@ struct SettingsView: View {
                     Button("Reset", role: .destructive) {
                         UserDefaults.standard.removeObject(forKey: "hasPromptedForHistoricalSync")
                         lastHistoricalSync = 0
+                        do {
+                            try modelContext.delete(model: RecoveryScoreEntity.self)
+                            try modelContext.delete(model: UserBaselineEntity.self)
+                            try modelContext.delete(model: HealthDataPointEntity.self)
+                        } catch {
+                            print("Failed to delete records: \(error)")
+                        }
                     }
                 } message: {
                     Text("This will clear all cached health data. You'll need to re-sync from Google Health.")
@@ -447,7 +454,7 @@ struct SettingsView: View {
                             // Trigger backfill for any enabled metrics
                             if !activeMetrics.isEmpty {
                                 isSyncingAppleHealth = true
-                                await viewModel.syncEnabledMetricsToAppleHealth(forceBackfill: true)
+                                await HealthKitSyncService.shared.syncEnabledMetricsToAppleHealth(healthService: AppEnvironment.shared.healthService, forceBackfill: true)
                                 isSyncingAppleHealth = false
                             }
                         } catch {
@@ -507,7 +514,7 @@ struct SettingsView: View {
                     guard appleHealthSyncConnected else { return }
                     Task {
                         isSyncingAppleHealth = true
-                        await viewModel.syncEnabledMetricsToAppleHealth(forceBackfill: true)
+                        await HealthKitSyncService.shared.syncEnabledMetricsToAppleHealth(healthService: AppEnvironment.shared.healthService, forceBackfill: true)
                         isSyncingAppleHealth = false
                     }
                 }) {
@@ -565,7 +572,7 @@ struct SettingsView: View {
                             
                             // Perform backfill sync for the enabled metric
                             isSyncingAppleHealth = true
-                            await viewModel.syncEnabledMetricsToAppleHealth(forceBackfill: true)
+                            await HealthKitSyncService.shared.syncEnabledMetricsToAppleHealth(healthService: AppEnvironment.shared.healthService, forceBackfill: true)
                             isSyncingAppleHealth = false
                         } catch {
                             print("Failed to enable \(metric.rawValue): \(error.localizedDescription)")

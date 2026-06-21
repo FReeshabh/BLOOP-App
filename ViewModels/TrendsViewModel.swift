@@ -133,8 +133,8 @@ final class TrendsViewModel: ObservableObject {
     private let healthService: HealthDataProvider
     private let authManager: AuthManager
 
-    init(healthService: HealthDataProvider = GoogleHealthService(),
-         authManager: AuthManager = .shared) {
+    init(healthService: HealthDataProvider = AppEnvironment.shared.healthService,
+         authManager: AuthManager = AppEnvironment.shared.authManager) {
         self.healthService = healthService
         self.authManager = authManager
     }
@@ -220,8 +220,14 @@ final class TrendsViewModel: ObservableObject {
     func navigatePeriod(forward: Bool) {
         let calendar = Calendar.current
         let offset = forward ? selectedPeriod.days : -selectedPeriod.days
+        let newEnd = calendar.date(byAdding: .day, value: offset, to: dateRangeEnd)!
+        
+        if forward && newEnd > Date() {
+            return
+        }
+        
         dateRangeStart = calendar.date(byAdding: .day, value: offset, to: dateRangeStart)!
-        dateRangeEnd   = calendar.date(byAdding: .day, value: offset, to: dateRangeEnd)!
+        dateRangeEnd   = newEnd
         Task { await loadData() }
     }
 
@@ -263,10 +269,13 @@ final class TrendsViewModel: ObservableObject {
 
         case .sixMonth:
             formatter.dateFormat = "MMM"
-            groupedByMonth = Dictionary(grouping: points) { calendar.component(.month, from: $0.startTime) }
-            return groupedByMonth.sorted { $0.key < $1.key }.enumerated().map { index, pair in
+            let groupedByYearMonth = Dictionary(grouping: points) { 
+                let comp = calendar.dateComponents([.year, .month], from: $0.startTime)
+                return "\(comp.year!)-\(String(format: "%02d", comp.month!))"
+            }
+            return groupedByYearMonth.sorted { $0.key < $1.key }.enumerated().map { index, pair in
                 let avg = pair.value.map(\.value).reduce(0, +) / Double(pair.value.count)
-                let label = pair.value.first.map { formatter.string(from: $0.startTime) } ?? "\(pair.key)"
+                let label = pair.value.first.map { formatter.string(from: $0.startTime) } ?? pair.key
                 return PeriodAverage(label: label, subLabel: nil, average: avg, percentChange: nil)
             }
         }

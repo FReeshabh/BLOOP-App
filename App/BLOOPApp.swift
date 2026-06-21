@@ -56,6 +56,7 @@ struct BLOOPApp: App {
                     GIDSignIn.sharedInstance.handle(url)
                 }
         }
+        .environmentObject(AppEnvironment.shared)
         .modelContainer(sharedModelContainer)
     }
 }

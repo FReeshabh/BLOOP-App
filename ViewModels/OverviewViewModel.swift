@@ -18,7 +18,7 @@ final class OverviewViewModel: ObservableObject {
     @Published var restingHeartRate: Double?
     @Published var todaySteps: Int = 0
     @Published var activeZoneMinutes: Double = 0
-    @Published var stressLevel: Double = 0  // 0–100 estimated from strain
+    @Published var loadPressure: Double = 0  // 0–100 estimated from strain
 
     // Insights
     @Published var insightHeadline: String = "Analyzing your data"
@@ -33,14 +33,7 @@ final class OverviewViewModel: ObservableObject {
     @Published var historicalSyncProgress: Double = 0.0
 
     // Date Selection
-    @Published var selectedDate: Date = Date() {
-        didSet {
-            Task {
-                // When date changes, we need to load data but we don't have modelContext here directly
-                // So the View will observe this and call loadData.
-            }
-        }
-    }
+    @Published var selectedDate: Date = Date()
 
     // MARK: - Dependencies
 
@@ -48,8 +41,8 @@ final class OverviewViewModel: ObservableObject {
     private let authManager: AuthManager
     private let recoveryEngine: RecoveryScoreEngine
 
-    init(healthService: HealthDataProvider = GoogleHealthService(),
-         authManager: AuthManager = .shared,
+    init(healthService: HealthDataProvider = AppEnvironment.shared.healthService,
+         authManager: AuthManager = AppEnvironment.shared.authManager,
          recoveryEngine: RecoveryScoreEngine = RecoveryScoreEngine()) {
         self.healthService = healthService
         self.authManager = authManager
@@ -112,7 +105,7 @@ final class OverviewViewModel: ObservableObject {
         if score >= 66 {
             insightHeadline = "Resilience is solid today."
             if estimatedStress > 50 {
-                insightExplanation = "You're well-recovered, but watch your stress levels as the day goes on."
+                insightExplanation = "You're well-recovered, but watch your load pressure as the day goes on."
             } else {
                 insightExplanation = "Your body is primed to take on more strain. Consider pushing harder."
             }
@@ -261,7 +254,7 @@ final class OverviewViewModel: ObservableObject {
             self.restingHeartRate = currentRHR
             self.todaySteps       = Int(todayStepsVal)
             self.activeZoneMinutes = todayAZM
-            self.stressLevel      = estimatedStress
+            self.loadPressure      = estimatedStress
 
             self.updateInsights()
 
@@ -405,57 +398,6 @@ final class OverviewViewModel: ObservableObject {
     // MARK: - Apple Health Sync
 
     func syncEnabledMetricsToAppleHealth(forceBackfill: Bool = false) async {
-        guard HealthKitManager.shared.isAvailable else { return }
-        
-        let calendar = Calendar.current
-        let now = Date()
-        
-        // Calculate date range
-        let lastSyncTime = UserDefaults.standard.double(forKey: "lastAppleHealthSync")
-        let startDate: Date
-        if forceBackfill || lastSyncTime == 0 {
-            startDate = calendar.date(byAdding: .day, value: -60, to: now)!
-        } else {
-            startDate = Date(timeIntervalSince1970: lastSyncTime)
-        }
-        
-        let sleepEnabled = UserDefaults.standard.bool(forKey: "appleHealthSyncSleep")
-        let hrvEnabled = UserDefaults.standard.bool(forKey: "appleHealthSyncHRV")
-        let rhrEnabled = UserDefaults.standard.bool(forKey: "appleHealthSyncRHR")
-        let stepsEnabled = UserDefaults.standard.bool(forKey: "appleHealthSyncSteps")
-        
-        do {
-            if sleepEnabled {
-                let sleeps = try await healthService.fetchAllSleepSessions(from: startDate, to: now)
-                for sleep in sleeps {
-                    try await HealthKitManager.shared.writeSleep(sleep: sleep)
-                }
-            }
-            
-            if hrvEnabled {
-                let hrvData = try await healthService.fetchDataPoints(for: .dailyHeartRateVariability, from: startDate, to: now)
-                for point in hrvData {
-                    try await HealthKitManager.shared.writeHRV(value: point.value, date: point.startTime)
-                }
-            }
-            
-            if rhrEnabled {
-                let rhrData = try await healthService.fetchDataPoints(for: .dailyRestingHeartRate, from: startDate, to: now)
-                for point in rhrData {
-                    try await HealthKitManager.shared.writeRestingHeartRate(value: point.value, date: point.startTime)
-                }
-            }
-            
-            if stepsEnabled {
-                let stepsData = try await healthService.fetchDataPoints(for: .steps, from: startDate, to: now)
-                for point in stepsData {
-                    try await HealthKitManager.shared.writeSteps(value: point.value, date: point.startTime)
-                }
-            }
-            
-            UserDefaults.standard.set(now.timeIntervalSince1970, forKey: "lastAppleHealthSync")
-        } catch {
-            print("⚠️ Error syncing to Apple Health: \(error.localizedDescription)")
-        }
+        await HealthKitSyncService.shared.syncEnabledMetricsToAppleHealth(healthService: self.healthService, forceBackfill: forceBackfill)
     }
 }

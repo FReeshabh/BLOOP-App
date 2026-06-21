@@ -117,7 +117,7 @@ struct ActivityRowView: View {
     
     private func formatTime(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.timeStyle = .short
+        formatter.dateFormat = "E, MMM d, h:mm a"
         return formatter.string(from: date)
     }
     

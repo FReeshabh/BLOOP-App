@@ -350,7 +350,9 @@ struct SleepDetailView: View {
                 breakdownRow(title: "Efficiency", score: breakdown.efficiency, icon: "bolt.heart.fill", goodThreshold: 85)
                 breakdownRow(title: "Deep Sleep", score: breakdown.deepSleep, icon: "moon.fill", goodThreshold: 85)
                 breakdownRow(title: "REM Sleep", score: breakdown.remSleep, icon: "moon.zzz.fill", goodThreshold: 85)
-                breakdownRow(title: "Latency", score: breakdown.latency, icon: "timer", goodThreshold: 85)
+                if let latency = breakdown.latency {
+                    breakdownRow(title: "Latency", score: latency, icon: "timer", goodThreshold: 85)
+                }
                 breakdownRow(title: "Timing", score: breakdown.timing, icon: "clock.fill", goodThreshold: 85)
             }
             .padding(16)

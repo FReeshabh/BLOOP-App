@@ -7,12 +7,14 @@ struct MainTabView: View {
     enum Tab: String, CaseIterable {
         case overview = "Overview"
         case trends   = "Trends"
+        case activity = "Activity"
         case settings = "Settings"
 
         var icon: String {
             switch self {
             case .overview: return "house.fill"
             case .trends:   return "chart.line.uptrend.xyaxis"
+            case .activity: return "figure.run"
             case .settings: return "gearshape.fill"
             }
         }
@@ -31,6 +33,12 @@ struct MainTabView: View {
                     Label(Tab.trends.rawValue, systemImage: Tab.trends.icon)
                 }
                 .tag(Tab.trends)
+                
+            ActivitiesLogView()
+                .tabItem {
+                    Label(Tab.activity.rawValue, systemImage: Tab.activity.icon)
+                }
+                .tag(Tab.activity)
 
             SettingsView()
                 .tabItem {

@@ -7,6 +7,7 @@ struct StressDetailView: View {
     let stressLevel: Double
     let strain: StrainData
     let recovery: RecoveryScore
+    @State private var showStressInfo = false
 
     private var stressColor: Color {
         if stressLevel < 33 { return Color(hex: "00E08F") }
@@ -54,6 +55,13 @@ struct StressDetailView: View {
                 }
             }
             .navigationBarHidden(true)
+            .alert(isPresented: $showStressInfo) {
+                Alert(
+                    title: Text("Stress Calculation"),
+                    message: Text("Stress is a derived metric indicating the total physiological load currently placed on your body. It is calculated by weighting your overnight recovery score against your accumulated strain for the day."),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
         }
         .preferredColorScheme(.dark)
     }
@@ -85,9 +93,16 @@ struct StressDetailView: View {
             
             Spacer()
             
-            Text("Stress")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.gray)
+            HStack(spacing: 4) {
+                Text("Stress")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.gray)
+                Button(action: { showStressInfo = true }) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                }
+            }
         }
         .padding(.horizontal)
         .padding(.top, 8)

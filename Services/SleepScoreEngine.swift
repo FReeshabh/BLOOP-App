@@ -8,7 +8,7 @@ class SleepScoreEngine {
         let totalTimeAsleep = sleep.totalTimeAsleep
         
         guard totalTimeInBed > 0, totalTimeAsleep > 0 else {
-            return SleepScoreBreakdown(totalSleep: 0, efficiency: 0, deepSleep: 0, remSleep: 0, latency: 0, timing: 0)
+            return SleepScoreBreakdown(totalSleep: 0, efficiency: 0, deepSleep: 0, remSleep: 0, latency: nil, timing: 0)
         }
 
         // 1. Total Sleep (25%)
@@ -48,8 +48,10 @@ class SleepScoreEngine {
 
         // 5. Latency (10%)
         let onsetMin = sleep.minutesToFallAsleep / 60.0
-        let latencyScore: Double
-        if onsetMin >= 10.0 && onsetMin <= 20.0 {
+        let latencyScore: Double?
+        if sleep.minutesToFallAsleep == 0 {
+            latencyScore = nil
+        } else if onsetMin >= 10.0 && onsetMin <= 20.0 {
             latencyScore = 100.0
         } else if onsetMin > 20.0 {
             latencyScore = max(0.0, 100.0 - ((onsetMin - 20.0) / 40.0) * 100.0)
@@ -78,7 +80,7 @@ class SleepScoreEngine {
             efficiency: Int(round(efficiencyScore)),
             deepSleep: Int(round(deepScore)),
             remSleep: Int(round(remScore)),
-            latency: Int(round(latencyScore)),
+            latency: latencyScore.map { Int(round($0)) },
             timing: Int(round(timingScore))
         )
     }

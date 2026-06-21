@@ -216,37 +216,83 @@ class GoogleHealthService: HealthDataProvider {
         let filter = filterString(for: .exercise, from: startDate, to: endDate)
         let rawPoints = try await fetchAllPages(for: url, token: token, filter: filter)
         
-        var activities: [ActivitySession] = []
-        for raw in rawPoints {
-            guard let exerciseNode = raw["exercise"] as? [String: Any],
-                  let interval = exerciseNode["interval"] as? [String: Any],
-                  let name = exerciseNode["exerciseType"] as? String else { continue }
-            
-            let start = parseIntervalDate(from: interval) ?? Date()
-            
-            var duration: TimeInterval = 0
-            if let endStr = interval["endTime"] as? String, let end = parseISO8601(endStr) {
-                duration = end.timeIntervalSince(start)
-            } else if let endStr = interval["physicalEndTime"] as? String, let end = parseISO8601(endStr) {
-                duration = end.timeIntervalSince(start)
+        let activities = try await withThrowingTaskGroup(of: ActivitySession?.self) { group in
+            for raw in rawPoints {
+                group.addTask { [weak self] in
+                    guard let self = self else { return nil }
+                    guard let exerciseNode = raw["exercise"] as? [String: Any],
+                          let interval = exerciseNode["interval"] as? [String: Any],
+                          let name = exerciseNode["exerciseType"] as? String else { return nil }
+                    
+                    let start = self.parseIntervalDate(from: interval) ?? Date()
+                    guard start >= startDate && start < endDate else { return nil }
+                    
+                    var duration: TimeInterval = 0
+                    var end = start
+                    if let endStr = interval["endTime"] as? String, let parsedEnd = self.parseISO8601(endStr) {
+                        end = parsedEnd
+                        duration = end.timeIntervalSince(start)
+                    } else if let endStr = interval["physicalEndTime"] as? String, let parsedEnd = self.parseISO8601(endStr) {
+                        end = parsedEnd
+                        duration = end.timeIntervalSince(start)
+                    }
+                    
+                    let isoFormatter = ISO8601DateFormatter()
+                    isoFormatter.formatOptions = [.withInternetDateTime]
+                    let startStr = isoFormatter.string(from: start)
+                    let endStr = isoFormatter.string(from: end)
+                    
+                    var calories: Double = 0
+                    if let calURL = URL(string: "\(self.baseURL)/active-energy-burned/dataPoints") {
+                        let calFilter = "active_energy_burned.interval.start_time >= \"\(startStr)\" AND active_energy_burned.interval.start_time < \"\(endStr)\""
+                        if let points = try? await self.fetchAllPages(for: calURL, token: token, filter: calFilter) {
+                            for p in points {
+                                if let node = p["activeEnergyBurned"] as? [String: Any], let kcal = self.doubleFromStringOrNumber(node["kcal"]) {
+                                    calories += kcal
+                                }
+                            }
+                        }
+                    }
+                    
+                    var avgHR: Double = 0
+                    var maxHR: Double = 0
+                    if let hrURL = URL(string: "\(self.baseURL)/heart-rate/dataPoints") {
+                        let hrFilter = "heart_rate.sample_time.physical_time >= \"\(startStr)\" AND heart_rate.sample_time.physical_time < \"\(endStr)\""
+                        if let points = try? await self.fetchAllPages(for: hrURL, token: token, filter: hrFilter) {
+                            var hrValues: [Double] = []
+                            for p in points {
+                                if let node = p["heartRate"] as? [String: Any], let bpm = self.doubleFromStringOrNumber(node["beatsPerMinute"]) ?? self.doubleFromStringOrNumber(node["bpm"]) {
+                                    hrValues.append(bpm)
+                                }
+                            }
+                            if !hrValues.isEmpty {
+                                avgHR = hrValues.reduce(0, +) / Double(hrValues.count)
+                                maxHR = hrValues.max() ?? 0
+                            }
+                        }
+                    }
+                    
+                    let strain = (duration / 60) * 0.2 + (avgHR > 100 ? (avgHR - 100) * 0.1 : 0)
+                    
+                    return ActivitySession(
+                        name: name.capitalized.replacingOccurrences(of: "_", with: " "),
+                        startTime: start,
+                        duration: duration,
+                        activityStrain: min(21.0, strain),
+                        caloriesBurned: calories,
+                        averageHR: avgHR,
+                        maxHR: maxHR
+                    )
+                }
             }
             
-            let calories = doubleFromStringOrNumber(exerciseNode["caloriesBurned"]) ?? 0
-            let avgHR = doubleFromStringOrNumber(exerciseNode["averageHeartRate"]) ?? 0
-            let maxHR = doubleFromStringOrNumber(exerciseNode["maxHeartRate"]) ?? 0
-            
-            // Generate arbitrary activity strain for visual purposes or real computation later
-            let strain = (duration / 60) * 0.2 + (avgHR > 100 ? (avgHR - 100) * 0.1 : 0)
-            
-            activities.append(ActivitySession(
-                name: name.capitalized.replacingOccurrences(of: "_", with: " "),
-                startTime: start,
-                duration: duration,
-                activityStrain: min(21.0, strain),
-                caloriesBurned: calories,
-                averageHR: avgHR,
-                maxHR: maxHR
-            ))
+            var results: [ActivitySession] = []
+            for try await result in group {
+                if let result = result {
+                    results.append(result)
+                }
+            }
+            return results
         }
         
         return activities.sorted { $0.startTime > $1.startTime }
@@ -352,7 +398,9 @@ class GoogleHealthService: HealthDataProvider {
     private func filterString(for dataType: HealthDataType, from startDate: Date, to endDate: Date) -> String? {
         let snakeCaseName = dataType.rawValue.replacingOccurrences(of: "-", with: "_")
         
-        if dataType == .heartRate ||
+        if dataType == .exercise {
+            return nil
+        } else if dataType == .heartRate ||
            dataType == .weight ||
            dataType == .bodyFat ||
            dataType == .vo2Max ||

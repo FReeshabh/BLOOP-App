@@ -229,7 +229,7 @@ struct OverviewDashboardView: View {
                         title: "Zone minutes",
                         value: String(format: "%.0f", viewModel.activeZoneMinutes),
                         unit: "min",
-                        subtitle: "Above average",
+                        subtitle: viewModel.activeZoneMinutes >= 30 ? "Goal reached" : "Goal 30 min",
                         showChevron: false
                     )
                 }
@@ -243,7 +243,7 @@ struct OverviewDashboardView: View {
                 OverviewMetricCardView(
                     icon: "bolt.horizontal.fill",
                     iconColor: Color(hex: "5B86E5"),
-                    title: "Optimal strain",
+                    title: "Day strain",
                     value: String(format: "%.0f", viewModel.currentLoadPosition),
                     unit: "",
                     subtitle: "Range \(Int(viewModel.optimalLoadRange.lowerBound))-\(Int(viewModel.optimalLoadRange.upperBound))",
@@ -266,10 +266,11 @@ struct OverviewDashboardView: View {
 
     private var stepsSubtitle: String {
         let steps = viewModel.todaySteps
-        if steps > 0 {
-            return "\(formatSteps(steps)) today"
+        let goal = 10000
+        if steps >= goal {
+            return "Goal reached"
         }
-        return "Goal 10,000"
+        return "\(formatSteps(goal - steps)) left"
     }
 
     private func formatSteps(_ steps: Int) -> String {
