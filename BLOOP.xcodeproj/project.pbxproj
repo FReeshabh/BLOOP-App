@@ -44,6 +44,7 @@
 		F28942ADFA8E9E76C145F85C /* SleepDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB8A74AEEB4833A9823E341C /* SleepDetailView.swift */; };
 		F828349652BF818F1EC276EA /* RecoveryScoreEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBA8B2712222ABBDC31F0D60 /* RecoveryScoreEntity.swift */; };
 		FA4CD4B5847173284FBAC985 /* TrendsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 785894AE8474B781C2D9184A /* TrendsViewModel.swift */; };
+		FC8546871618CDFEDCADC1B6 /* SleepScoreEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80D9A247011FC81DF6C57003 /* SleepScoreEngine.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -63,6 +64,7 @@
 		72B52813015B78D17FCC03D2 /* StrainGaugeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrainGaugeView.swift; sourceTree = "<group>"; };
 		7761B174832F0F4C0E25860E /* HealthDataType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataType.swift; sourceTree = "<group>"; };
 		785894AE8474B781C2D9184A /* TrendsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsViewModel.swift; sourceTree = "<group>"; };
+		80D9A247011FC81DF6C57003 /* SleepScoreEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepScoreEngine.swift; sourceTree = "<group>"; };
 		8EAFB894C18AFF9642E1758A /* RecoveryContributorsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryContributorsView.swift; sourceTree = "<group>"; };
 		9A9F7D4A352D7765561C6D93 /* HeartRateDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateDetailView.swift; sourceTree = "<group>"; };
 		9F546435A219B08732FA7E14 /* ScoreRingsRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreRingsRowView.swift; sourceTree = "<group>"; };
@@ -138,6 +140,7 @@
 				525D55B7D7950872AB658246 /* HealthDataProvider.swift */,
 				BE1284A37A12AA53B477ED6D /* HealthKitManager.swift */,
 				E2445973C8C31B1B2F8A5586 /* RecoveryScoreEngine.swift */,
+				80D9A247011FC81DF6C57003 /* SleepScoreEngine.swift */,
 				AAD3399A987DC99958617D73 /* ThemeManager.swift */,
 			);
 			path = Services;
@@ -289,6 +292,7 @@
 				730944BE84D7B59FD4F6684A /* SettingsView.swift in Sources */,
 				642B19CEAEB2CA3EC4732700 /* SleepData.swift in Sources */,
 				F28942ADFA8E9E76C145F85C /* SleepDetailView.swift in Sources */,
+				FC8546871618CDFEDCADC1B6 /* SleepScoreEngine.swift in Sources */,
 				382B67A7A4613DDABEE6126E /* SleepStagesBarView.swift in Sources */,
 				06F989474B55BF2589BAFFCB /* StrainData.swift in Sources */,
 				49D407EBF573D89C764C029A /* StrainGaugeView.swift in Sources */,

@@ -17,18 +17,22 @@ struct SleepData: Identifiable, Codable {
     let remSleepTime: TimeInterval
     let deepSleepTime: TimeInterval
     
+    // Onset and restlessness
+    let minutesToFallAsleep: TimeInterval // seconds
+    let minutesAfterWakeUp: TimeInterval // seconds
+    
+    // Additional metrics
+    var deepSleepRMSSD: Double? // From DailyHeartRateVariability if available
+    
     // Targets & scoring
     let sleepNeed: TimeInterval        // personalized target in seconds (default 8h)
-    var apiScore: Int?                 // Provided by API
+    var computedScore: Int?            // Calculated externally via SleepScoreEngine
     
-    /// Sleep performance (overall score). Uses API score if available, otherwise calculates an ensemble.
+    /// Note: Google Health / Health Connect does not provide a native sleep score.
+    /// This score is always app-computed using the SleepScoreEngine, based on efficiency,
+    /// duration, stage balance, and onset.
     var sleepPerformance: Int {
-        if let apiScore = apiScore, apiScore > 0 {
-            return apiScore
-        }
-        let durationScore = Double(hoursVsNeed)
-        let efficiencyScore = Double(sleepEfficiency)
-        return min(100, max(0, Int(round(durationScore * 0.6 + efficiencyScore * 0.4))))
+        return computedScore ?? 0
     }
     
     /// Hours vs Need as a percentage of sleep need achieved.
@@ -53,7 +57,7 @@ struct SleepData: Identifiable, Codable {
         return "\(minutes)m"
     }
     
-    /// Sleep performance band (mirrors recovery band logic).
+    /// Sleep performance band.
     var performanceBand: SleepPerformanceBand {
         if sleepPerformance >= 85 { return .optimal }
         else if sleepPerformance >= 70 { return .adequate }

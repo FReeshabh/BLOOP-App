@@ -3,9 +3,21 @@ import SwiftUI
 /// Settings screen with theme, data source, and account management.
 struct SettingsView: View {
     @EnvironmentObject private var themeManager: ThemeManager
+    @Environment(\.scenePhase) private var scenePhase
     @State private var showResetConfirmation = false
     @State private var showSignOutConfirmation = false
     @AppStorage("lastHistoricalSync") private var lastHistoricalSync: Double = 0
+
+    // Apple Health Sync properties
+    @AppStorage("appleHealthSyncConnected") private var appleHealthSyncConnected = false
+    @AppStorage("appleHealthSyncSleep") private var appleHealthSyncSleep = false
+    @AppStorage("appleHealthSyncHRV") private var appleHealthSyncHRV = false
+    @AppStorage("appleHealthSyncRHR") private var appleHealthSyncRHR = false
+    @AppStorage("appleHealthSyncSteps") private var appleHealthSyncSteps = false
+    @AppStorage("lastAppleHealthSync") private var lastAppleHealthSync: Double = 0
+    @State private var isPermissionRevoked = false
+    @State private var isSyncingAppleHealth = false
+    @StateObject private var viewModel = OverviewViewModel()
 
     var body: some View {
         ZStack {
@@ -24,6 +36,9 @@ struct SettingsView: View {
 
                     // Data Source
                     dataSourceSection
+                    
+                    // Apple Health
+                    appleHealthSection
 
                     // Account
                     accountSection
@@ -34,6 +49,14 @@ struct SettingsView: View {
                     Spacer(minLength: 40)
                 }
             }
+        }
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .active {
+                checkPermissions()
+            }
+        }
+        .onAppear {
+            checkPermissions()
         }
     }
 
@@ -363,5 +386,232 @@ struct SettingsView: View {
             .foregroundColor(.gray.opacity(0.6))
             .tracking(1.5)
             .padding(.leading, 4)
+    }
+
+    // MARK: - Apple Health Sync
+
+    private var appleHealthSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                sectionTitle("APPLE HEALTH SYNC")
+                Spacer()
+                if lastAppleHealthSync > 0 {
+                    Text("Last synced: \(Date(timeIntervalSince1970: lastAppleHealthSync).formatted(.relative(presentation: .named)))")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.gray.opacity(0.6))
+                }
+            }
+            
+            VStack(spacing: 0) {
+                // Connection Status / Revoked Warning
+                if isPermissionRevoked {
+                    HStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.octagon.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(Color(hex: "FF334B"))
+                            .frame(width: 28)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Apple Health Access Revoked")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(Color(hex: "FF334B"))
+                            Text("Reconnect in Settings to resume sync")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.gray)
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    
+                    Divider().background(Color.white.opacity(0.06)).padding(.leading, 52)
+                }
+                
+                // Master Connect row
+                Button(action: {
+                    Task {
+                        var activeMetrics = Set<HealthKitMetric>()
+                        if appleHealthSyncSleep { activeMetrics.insert(.sleep) }
+                        if appleHealthSyncHRV { activeMetrics.insert(.hrv) }
+                        if appleHealthSyncRHR { activeMetrics.insert(.restingHeartRate) }
+                        if appleHealthSyncSteps { activeMetrics.insert(.steps) }
+                        
+                        // If no metrics selected, request for all to show the sheet
+                        let metricsToRequest = activeMetrics.isEmpty ? Set(HealthKitMetric.allCases) : activeMetrics
+                        
+                        do {
+                            try await HealthKitManager.shared.requestAuthorization(for: metricsToRequest)
+                            appleHealthSyncConnected = true
+                            checkPermissions()
+                            
+                            // Trigger backfill for any enabled metrics
+                            if !activeMetrics.isEmpty {
+                                isSyncingAppleHealth = true
+                                await viewModel.syncEnabledMetricsToAppleHealth(forceBackfill: true)
+                                isSyncingAppleHealth = false
+                            }
+                        } catch {
+                            print("Authorization failed: \(error.localizedDescription)")
+                        }
+                    }
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "heart.text.square.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(appleHealthSyncConnected ? Color(hex: "00E08F") : Color(hex: "FF334B"))
+                            .frame(width: 28)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Connect Apple Health")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(.white)
+                            Text(appleHealthSyncConnected ? "Connected" : "Not Connected")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(appleHealthSyncConnected ? Color(hex: "00E08F") : .gray)
+                        }
+                        
+                        Spacer()
+                        
+                        if isSyncingAppleHealth {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        } else {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.gray.opacity(0.4))
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                Divider().background(Color.white.opacity(0.06)).padding(.leading, 52)
+                
+                // Toggle rows
+                toggleRow(title: "Sleep Duration & Stages", isKey: $appleHealthSyncSleep, metric: .sleep)
+                Divider().background(Color.white.opacity(0.06)).padding(.leading, 52)
+                
+                toggleRow(title: "Heart Rate Variability", isKey: $appleHealthSyncHRV, metric: .hrv)
+                Divider().background(Color.white.opacity(0.06)).padding(.leading, 52)
+                
+                toggleRow(title: "Resting Heart Rate", isKey: $appleHealthSyncRHR, metric: .restingHeartRate)
+                Divider().background(Color.white.opacity(0.06)).padding(.leading, 52)
+                
+                toggleRow(title: "Steps", isKey: $appleHealthSyncSteps, metric: .steps)
+                
+                Divider().background(Color.white.opacity(0.06)).padding(.leading, 52)
+                
+                // Sync Now row
+                Button(action: {
+                    guard appleHealthSyncConnected else { return }
+                    Task {
+                        isSyncingAppleHealth = true
+                        await viewModel.syncEnabledMetricsToAppleHealth(forceBackfill: true)
+                        isSyncingAppleHealth = false
+                    }
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.system(size: 16))
+                            .foregroundColor(appleHealthSyncConnected ? Color(hex: "FFC700") : .gray)
+                            .frame(width: 28)
+                        
+                        Text("Sync Now")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(appleHealthSyncConnected ? .white : .gray)
+                        
+                        Spacer()
+                        
+                        if isSyncingAppleHealth {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        } else {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.gray.opacity(0.4))
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                }
+                .disabled(!appleHealthSyncConnected || isSyncingAppleHealth)
+                .buttonStyle(PlainButtonStyle())
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white.opacity(0.05))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+            )
+        }
+        .padding(.horizontal)
+    }
+    
+    private func toggleRow(title: String, isKey: Binding<Bool>, metric: HealthKitMetric) -> some View {
+        Toggle(isOn: Binding(
+            get: { isKey.wrappedValue },
+            set: { newValue in
+                isKey.wrappedValue = newValue
+                if newValue {
+                    // Trigger authorization request and backfill for this specific metric
+                    Task {
+                        do {
+                            try await HealthKitManager.shared.requestAuthorization(for: [metric])
+                            appleHealthSyncConnected = true
+                            checkPermissions()
+                            
+                            // Perform backfill sync for the enabled metric
+                            isSyncingAppleHealth = true
+                            await viewModel.syncEnabledMetricsToAppleHealth(forceBackfill: true)
+                            isSyncingAppleHealth = false
+                        } catch {
+                            print("Failed to enable \(metric.rawValue): \(error.localizedDescription)")
+                        }
+                    }
+                } else {
+                    checkPermissions()
+                }
+            }
+        )) {
+            HStack(spacing: 12) {
+                Image(systemName: metricIcon(for: metric))
+                    .font(.system(size: 16))
+                    .foregroundColor(.gray)
+                    .frame(width: 28)
+                
+                Text(title)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(.white)
+            }
+        }
+        .toggleStyle(SwitchToggleStyle(tint: Color(hex: "00E08F")))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+    
+    private func metricIcon(for metric: HealthKitMetric) -> String {
+        switch metric {
+        case .sleep: return "moon.fill"
+        case .hrv: return "waveform.path.ecg"
+        case .restingHeartRate: return "heart.fill"
+        case .steps: return "figure.walk"
+        }
+    }
+
+    private func checkPermissions() {
+        var activeMetrics = Set<HealthKitMetric>()
+        if appleHealthSyncSleep { activeMetrics.insert(.sleep) }
+        if appleHealthSyncHRV { activeMetrics.insert(.hrv) }
+        if appleHealthSyncRHR { activeMetrics.insert(.restingHeartRate) }
+        if appleHealthSyncSteps { activeMetrics.insert(.steps) }
+        
+        if !activeMetrics.isEmpty {
+            isPermissionRevoked = HealthKitManager.shared.isPermissionRevoked(for: activeMetrics)
+        } else {
+            isPermissionRevoked = false
+        }
     }
 }

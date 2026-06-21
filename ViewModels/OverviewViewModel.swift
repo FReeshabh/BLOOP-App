@@ -212,7 +212,12 @@ final class OverviewViewModel: ObservableObject {
             }
 
             // --- Sleep ---
-            let sleepResult = allSleeps.filter { $0.totalTimeAsleep >= 10800 }.max(by: { $0.totalTimeAsleep < $1.totalTimeAsleep })
+            var sleepResult = allSleeps.filter { $0.totalTimeAsleep >= 10800 }.max(by: { $0.totalTimeAsleep < $1.totalTimeAsleep })
+            if sleepResult != nil {
+                // If HRV data is available for today, pass it to the sleep data for score calculation
+                sleepResult!.deepSleepRMSSD = currentHRV
+                sleepResult!.computedScore = SleepScoreEngine.calculateScore(for: sleepResult!)
+            }
             self.sleepData = sleepResult
             self.todayNaps = allSleeps.filter { $0.totalTimeAsleep < 10800 }
 
@@ -257,6 +262,9 @@ final class OverviewViewModel: ObservableObject {
             self.stressLevel      = estimatedStress
 
             self.updateInsights()
+
+            // Sync to Apple Health after successful data ingestion
+            await self.syncEnabledMetricsToAppleHealth()
 
         } catch let GoogleHealthError.apiError(message) where message.contains("403") || message.contains("401") {
             authManager.signOut()
@@ -390,5 +398,62 @@ final class OverviewViewModel: ObservableObject {
         let variance = values.map { pow($0 - mean, 2) }.reduce(0, +) / Double(values.count)
         let sd = max(0.5, sqrt(variance))
         return (mean: mean, sd: sd)
+    }
+
+    // MARK: - Apple Health Sync
+
+    func syncEnabledMetricsToAppleHealth(forceBackfill: Bool = false) async {
+        guard HealthKitManager.shared.isAvailable else { return }
+        
+        let calendar = Calendar.current
+        let now = Date()
+        
+        // Calculate date range
+        let lastSyncTime = UserDefaults.standard.double(forKey: "lastAppleHealthSync")
+        let startDate: Date
+        if forceBackfill || lastSyncTime == 0 {
+            startDate = calendar.date(byAdding: .day, value: -60, to: now)!
+        } else {
+            startDate = Date(timeIntervalSince1970: lastSyncTime)
+        }
+        
+        let sleepEnabled = UserDefaults.standard.bool(forKey: "appleHealthSyncSleep")
+        let hrvEnabled = UserDefaults.standard.bool(forKey: "appleHealthSyncHRV")
+        let rhrEnabled = UserDefaults.standard.bool(forKey: "appleHealthSyncRHR")
+        let stepsEnabled = UserDefaults.standard.bool(forKey: "appleHealthSyncSteps")
+        
+        do {
+            if sleepEnabled {
+                let sleeps = try await healthService.fetchAllSleepSessions(from: startDate, to: now)
+                for sleep in sleeps {
+                    try await HealthKitManager.shared.writeSleep(sleep: sleep)
+                }
+            }
+            
+            if hrvEnabled {
+                let hrvData = try await healthService.fetchDataPoints(for: .dailyHeartRateVariability, from: startDate, to: now)
+                for point in hrvData {
+                    try await HealthKitManager.shared.writeHRV(value: point.value, date: point.startTime)
+                }
+            }
+            
+            if rhrEnabled {
+                let rhrData = try await healthService.fetchDataPoints(for: .dailyRestingHeartRate, from: startDate, to: now)
+                for point in rhrData {
+                    try await HealthKitManager.shared.writeRestingHeartRate(value: point.value, date: point.startTime)
+                }
+            }
+            
+            if stepsEnabled {
+                let stepsData = try await healthService.fetchDataPoints(for: .steps, from: startDate, to: now)
+                for point in stepsData {
+                    try await HealthKitManager.shared.writeSteps(value: point.value, date: point.startTime)
+                }
+            }
+            
+            UserDefaults.standard.set(now.timeIntervalSince1970, forKey: "lastAppleHealthSync")
+        } catch {
+            print("⚠️ Error syncing to Apple Health: \(error.localizedDescription)")
+        }
     }
 }

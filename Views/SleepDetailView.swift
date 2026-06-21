@@ -7,6 +7,8 @@ struct SleepDetailView: View {
     @Binding var selectedDate: Date
     var onDateChange: ((Date) -> Void)?
 
+    @State private var showScoreInfo = false
+    
     init(sleep: SleepData?, naps: [SleepData] = [], selectedDate: Binding<Date> = .constant(Date()), onDateChange: ((Date) -> Void)? = nil) {
         self.sleep = sleep
         self.naps = naps
@@ -134,6 +136,39 @@ struct SleepDetailView: View {
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.gray.opacity(0.6))
             }
+            
+            // Computed Score Row
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text("Sleep Quality")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+                        
+                        Button(action: { showScoreInfo = true }) {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    Text("App-computed estimate")
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                }
+                Spacer()
+                
+                Text("\(sleep.sleepPerformance)")
+                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .foregroundColor(Color(hex: sleep.performanceBand.colorHex))
+            }
+            .padding(.vertical, 8)
+        }
+        .alert(isPresented: $showScoreInfo) {
+            Alert(
+                title: Text("Computed Sleep Score"),
+                message: Text("Health Connect does not provide a native sleep score. This estimate is computed using your sleep efficiency, duration vs goal, stage balance, and onset time."),
+                dismissButton: .default(Text("OK"))
+            )
         }
     }
 

@@ -413,6 +413,8 @@ class GoogleHealthService: HealthDataProvider {
         let minInBed   = doubleFromStringOrNumber(summary["minutesInSleepPeriod"]) ?? 0
         let minAsleep  = doubleFromStringOrNumber(summary["minutesAsleep"]) ?? 0
         let minAwake   = doubleFromStringOrNumber(summary["minutesAwake"]) ?? 0
+        let minToFallAsleep = doubleFromStringOrNumber(summary["minutesToFallAsleep"]) ?? 0
+        let minAfterWakeUp = doubleFromStringOrNumber(summary["minutesAfterWakeUp"]) ?? 0
 
         var lightMin = 0.0
         var deepMin  = 0.0
@@ -431,11 +433,6 @@ class GoogleHealthService: HealthDataProvider {
             }
         }
         
-        var apiScore: Int? = nil
-        if let score = doubleFromStringOrNumber(sleepNode["sleepScore"]) ?? doubleFromStringOrNumber(summary["sleepScore"]) ?? doubleFromStringOrNumber(summary["score"]) {
-            apiScore = Int(score)
-        }
-
         return SleepData(
             date: sessionDate,
             bedTime: bedTime,
@@ -446,8 +443,11 @@ class GoogleHealthService: HealthDataProvider {
             lightSleepTime: lightMin * 60,
             remSleepTime: remMin * 60,
             deepSleepTime: deepMin * 60,
+            minutesToFallAsleep: minToFallAsleep * 60,
+            minutesAfterWakeUp: minAfterWakeUp * 60,
+            deepSleepRMSSD: nil,
             sleepNeed: 8 * 3600,
-            apiScore: apiScore
+            computedScore: nil
         )
     }
 
