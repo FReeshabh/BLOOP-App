@@ -1,9 +1,13 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Hearth-style Trends view — historical data browser with metric picker, period toggle, and chart.
 struct TrendsView: View {
     @StateObject private var viewModel = TrendsViewModel()
     @State private var showMetricPicker = false
+    @State private var selectedPointIndex: Int? = nil
 
     var body: some View {
         ZStack {
@@ -201,7 +205,34 @@ struct TrendsView: View {
     // MARK: - Chart
 
     private var chartView: some View {
-        VStack(spacing: 16) {
+        let accentColor = Color(hex: viewModel.selectedMetric.colorHex)
+        let validVals = viewModel.periodAverages.compactMap { $0.average }
+        let scaleMode = viewModel.selectedMetric.scaleMode
+        
+        let maxVal = validVals.max() ?? 1
+        let minVal: Double = {
+            if validVals.isEmpty { return 0 }
+            if scaleMode == .zeroBased { return 0 }
+            // tight scaling: add slight padding
+            let currentMin = validVals.min() ?? 0
+            let range = maxVal - currentMin
+            return max(0, currentMin - (range * 0.1)) // 10% padding below
+        }()
+        let range = max(maxVal - minVal, 1)
+
+        // Generate nicer gridlines (round to significant digits)
+        let magnitude = pow(10, floor(log10(range)))
+        let stepY = (range / 2) > 0 ? (ceil((range / 2) / (magnitude / 2)) * (magnitude / 2)) : 1
+        let niceMin = scaleMode == .zeroBased ? 0 : floor(minVal / stepY) * stepY
+        let niceMax = max(niceMin + stepY * 2, ceil(maxVal / stepY) * stepY)
+        let niceRange = max(niceMax - niceMin, 1)
+
+        let count = viewModel.periodAverages.count
+        
+        // Gridlines (3 lines: top, middle, bottom)
+        let gridlines = [niceMax, niceMin + stepY, niceMin]
+
+        return VStack(spacing: 16) {
             // Chart header: axis unit label
             HStack {
                 Text("PER PERIOD")
@@ -220,33 +251,7 @@ struct TrendsView: View {
 
             // Line chart
             GeometryReader { geometry in
-                let accentColor = Color(hex: viewModel.selectedMetric.colorHex)
-                let validVals = viewModel.periodAverages.compactMap { $0.average }
-                let scaleMode = viewModel.selectedMetric.scaleMode
-                
-                let maxVal = validVals.max() ?? 1
-                let minVal: Double = {
-                    if validVals.isEmpty { return 0 }
-                    if scaleMode == .zeroBased { return 0 }
-                    // tight scaling: add slight padding
-                    let currentMin = validVals.min() ?? 0
-                    let range = maxVal - currentMin
-                    return max(0, currentMin - (range * 0.1)) // 10% padding below
-                }()
-                let range = max(maxVal - minVal, 1)
-
-                // Generate nicer gridlines (round to significant digits)
-                let magnitude = pow(10, floor(log10(range)))
-                let stepY = (range / 2) > 0 ? (ceil((range / 2) / (magnitude / 2)) * (magnitude / 2)) : 1
-                let niceMin = scaleMode == .zeroBased ? 0 : floor(minVal / stepY) * stepY
-                let niceMax = max(niceMin + stepY * 2, ceil(maxVal / stepY) * stepY)
-                let niceRange = max(niceMax - niceMin, 1)
-
-                let count = viewModel.periodAverages.count
                 let stepX = count > 1 ? geometry.size.width / CGFloat(count) : geometry.size.width
-                
-                // Gridlines (3 lines: top, middle, bottom)
-                let gridlines = [niceMax, niceMin + stepY, niceMin]
                 
                 ZStack {
                     // Background gridlines and labels
@@ -320,14 +325,6 @@ struct TrendsView: View {
                                     .frame(width: 8, height: 8)
                                     .position(x: x, y: y)
                             }
-                            
-                            // Point Value Label (optional, currently disabled to avoid clutter)
-                            /*
-                            Text(viewModel.formatValue(avg))
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.white)
-                                .position(x: x, y: y - 16)
-                            */
                         }
                         
                         // X-Axis Label
@@ -343,7 +340,66 @@ struct TrendsView: View {
                         }
                         .position(x: x, y: geometry.size.height - 10)
                     }
+
+                    // Selected Point Overlay
+                    if let idx = selectedPointIndex, idx < count, let avg = viewModel.periodAverages[idx].average {
+                        let x = stepX * CGFloat(idx) + stepX / 2.0
+                        let h = geometry.size.height * 0.7 * CGFloat((avg - niceMin) / niceRange)
+                        let y = geometry.size.height - 35 - h
+
+                        // Vertical Line
+                        Path { path in
+                            path.move(to: CGPoint(x: x, y: 0))
+                            path.addLine(to: CGPoint(x: x, y: geometry.size.height - 35))
+                        }
+                        .stroke(accentColor.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [5]))
+
+                        // Highlight Point
+                        Circle()
+                            .fill(Color.black)
+                            .frame(width: 14, height: 14)
+                            .position(x: x, y: y)
+                        Circle()
+                            .fill(accentColor)
+                            .frame(width: 10, height: 10)
+                            .position(x: x, y: y)
+
+                        // Tooltip
+                        VStack(spacing: 4) {
+                            Text(viewModel.formatValue(avg))
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                            Text("\(viewModel.periodAverages[idx].label) \(viewModel.periodAverages[idx].subLabel ?? "")")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(.gray)
+                        }
+                        .padding(8)
+                        .background(Color.black.opacity(0.8))
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                        )
+                        .position(x: x, y: y - 40 < 0 ? y + 40 : y - 40)
+                    }
                 }
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            let rawIndex = Int(value.location.x / stepX)
+                            let index = max(0, min(count - 1, rawIndex))
+                            if selectedPointIndex != index {
+                                #if canImport(UIKit)
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                #endif
+                            }
+                            selectedPointIndex = index
+                        }
+                        .onEnded { _ in
+                            selectedPointIndex = nil
+                        }
+                )
             }
             .frame(height: 200)
             

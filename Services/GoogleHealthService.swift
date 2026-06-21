@@ -112,10 +112,12 @@ class GoogleHealthService: HealthDataProvider {
                 guard let (value, date) = extractValue(from: raw, for: dataType) else { continue }
 
                 let src = raw["dataSource"] as? [String: Any]
-                let isFitbit = (src?["platform"] as? String) == "FITBIT"
-                guard isFitbit else { continue }
+                let platform = src?["platform"] as? String ?? ""
+                let isFitbit = platform == "FITBIT"
+                let isAllowed = isFitbit || (dataType == .activeZoneMinutes)
+                guard isAllowed else { continue }
                 
-                let sourceLabel = "Fitbit"
+                let sourceLabel = isFitbit ? "Fitbit" : (platform.isEmpty ? "Google" : platform.capitalized)
                 let key = Self.calendarKey(for: date)
 
                 if isCumulative || isAveraged {
@@ -533,20 +535,32 @@ class GoogleHealthService: HealthDataProvider {
             return (bpm, date)
 
         case .activeZoneMinutes:
-            // Structure: { "activeZoneMinutes": { "interval": { "civilStartTime": { "date": {...} } }, "fatBurnActiveZoneMinutes": 5, "cardioActiveZoneMinutes": 10, "peakActiveZoneMinutes": 2 } }
-            guard let node = point["activeZoneMinutes"] as? [String: Any] else { return nil }
-            
-            let date = parseIntervalDate(from: node["interval"] as? [String: Any])
-                ?? parseIntervalDate(from: point["interval"] as? [String: Any])
-                ?? parseCivilDateFromAnyInterval(in: point)
+            // Could be flat structure: { "interval": {...}, "activeZoneMinutes": "2", "heartRateZone": "FAT_BURN" }
+            // Or nested structure: { "activeZoneMinutes": { "interval": {...}, "fatBurnActiveZoneMinutes": 5, ... } }
+            if let node = point["activeZoneMinutes"] as? [String: Any] {
+                let date = parseIntervalDate(from: node["interval"] as? [String: Any])
+                    ?? parseIntervalDate(from: point["interval"] as? [String: Any])
+                    ?? parseCivilDateFromAnyInterval(in: point)
                 
-            guard let validDate = date else { return nil }
-            
-            let fat     = doubleFromStringOrNumber(node["fatBurnActiveZoneMinutes"]) ?? 0
-            let cardio  = doubleFromStringOrNumber(node["cardioActiveZoneMinutes"]) ?? 0
-            let peak    = doubleFromStringOrNumber(node["peakActiveZoneMinutes"]) ?? 0
-            let total   = fat + cardio + peak
-            return (total, validDate)
+                guard let validDate = date else { return nil }
+                
+                let fat     = doubleFromStringOrNumber(node["fatBurnActiveZoneMinutes"]) ?? 0
+                let cardio  = doubleFromStringOrNumber(node["cardioActiveZoneMinutes"]) ?? 0
+                let peak    = doubleFromStringOrNumber(node["peakActiveZoneMinutes"]) ?? 0
+                let total   = fat + cardio + peak
+                return (total, validDate)
+            } else if let valStrOrNum = point["activeZoneMinutes"] {
+                let date = parseIntervalDate(from: point["interval"] as? [String: Any])
+                    ?? parseCivilDateFromAnyInterval(in: point)
+                
+                guard let validDate = date else { return nil }
+                guard let value = doubleFromStringOrNumber(valStrOrNum) else { return nil }
+                return (value, validDate)
+            } else if let value = findFpOrIntVal(in: point),
+                      let date = parseIntervalDate(from: point["interval"] as? [String: Any]) ?? parseCivilDateFromAnyInterval(in: point) {
+                return (value, date)
+            }
+            return nil
 
         default:
             // Generic fallback for unmapped types: scan nested dicts for fpVal/intVal (legacy Google Fit format).

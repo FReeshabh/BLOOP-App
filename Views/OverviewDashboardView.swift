@@ -243,7 +243,7 @@ struct OverviewDashboardView: View {
                 OverviewMetricCardView(
                     icon: "bolt.horizontal.fill",
                     iconColor: Color(hex: "5B86E5"),
-                    title: "Optimal load",
+                    title: "Optimal strain",
                     value: String(format: "%.0f", viewModel.currentLoadPosition),
                     unit: "",
                     subtitle: "Range \(Int(viewModel.optimalLoadRange.lowerBound))-\(Int(viewModel.optimalLoadRange.upperBound))",
