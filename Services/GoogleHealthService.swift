@@ -368,12 +368,6 @@ class GoogleHealthService: HealthDataProvider {
             let startDateStr = dateFormatter.string(from: startDate)
             let endDateStr = dateFormatter.string(from: endDate)
             return "\(snakeCaseName).date >= \"\(startDateStr)\" AND \(snakeCaseName).date < \"\(endDateStr)\""
-        } else if dataType == .exercise {
-            let isoFormatter = ISO8601DateFormatter()
-            isoFormatter.formatOptions = [.withInternetDateTime]
-            let startDateStr = isoFormatter.string(from: startDate)
-            let endDateStr = isoFormatter.string(from: endDate)
-            return "exercise.interval.end_time >= \"\(startDateStr)\" AND exercise.interval.end_time < \"\(endDateStr)\""
         } else {
             let isoFormatter = ISO8601DateFormatter()
             isoFormatter.formatOptions = [.withInternetDateTime]

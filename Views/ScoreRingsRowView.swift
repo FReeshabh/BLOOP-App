@@ -25,7 +25,7 @@ struct ScoreRingsRowView: View {
                 label: "Sleep",
                 icon: "moon.fill",
                 ringColor: Color(hex: "4A90D9"),
-                showPercent: true,
+                showPercent: false,
                 hasData: hasSleepData
             )
             .onTapGesture { onSleepTap?() }

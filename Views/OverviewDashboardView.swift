@@ -47,9 +47,20 @@ struct OverviewDashboardView: View {
             }
         }
         .sheet(isPresented: $showSleepDetail) {
-            if let sleep = viewModel.sleepData {
-                SleepDetailView(sleep: sleep, naps: viewModel.todayNaps)
-            }
+            SleepDetailView(
+                sleep: viewModel.sleepData,
+                naps: viewModel.todayNaps,
+                selectedDate: Binding(
+                    get: { viewModel.selectedDate },
+                    set: { newDate in
+                        viewModel.selectedDate = newDate
+                        Task {
+                            await viewModel.loadData(modelContext: modelContext)
+                        }
+                    }
+                ),
+                onDateChange: { _ in }
+            )
         }
         .sheet(isPresented: $showLoadDetail) {
             if let strain = viewModel.strainData {

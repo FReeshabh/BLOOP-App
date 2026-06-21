@@ -25,5 +25,9 @@
 	<string>1</string>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>BLOOP writes your synced health metrics (steps, sleep, HRV, RHR) to Apple Health.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>BLOOP reads HealthKit status information to prevent duplicate entries.</string>
 </dict>
 </plist>

@@ -11,12 +11,15 @@ targets:
       - Services
       - ViewModels
       - Views
+    capabilities:
+      - capability: healthKit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: bloop.hearth
         INFOPLIST_FILE: Info.plist
         DEVELOPMENT_TEAM: PXP453J347
         ENABLE_DEBUG_DYLIB: NO
+        CODE_SIGN_ENTITLEMENTS: BLOOP.entitlements
     dependencies:
       - package: GoogleSignIn
         product: GoogleSignIn
